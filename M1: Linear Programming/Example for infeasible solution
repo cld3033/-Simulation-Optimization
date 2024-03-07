@@ -3,7 +3,7 @@
 # s.t.
 # x_1          >= 4
 #        2x_2  >= 20
-# 3x_1 + 2x_2  >= 10
+# 3x_1 + 2x_2  <= 18
 # x_1 and x_2  >= 0
 
 # Modle in Python 
@@ -18,8 +18,8 @@ x2 = LpVariable('x_2', lowBound = 0)
 prob += 6*x1 + 4*x2, "Obj"
 # Constraints 
 prob += x1 >= 4
-# prob += 2*x2 = 20
-# prob += 3*x1 + 2*x2 <= 18 
+prob += 2*x2 >= 20
+prob += 3*x1 + 2*x2 <= 18 
 print(prob)
 
 # command throug the object created (prob) to solve the model 
