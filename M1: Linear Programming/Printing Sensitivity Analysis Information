@@ -1,0 +1,50 @@
+# Example: WYNDOR GALSS CO.
+# Max: Z = 3x_1 + 5x_2
+# s.t.
+# x_1          <= 4
+#        2x_2  <= 12
+# 3x_1 + 2x_2  <= 18
+# x_1 and x_2  >= 0
+
+# Modle in Python 
+from pulp import *
+# Define the name of the model 
+prob = LpProblem("WYNDOR GLASS CO.", LpMaximize)
+# Define decision variables fot the model 
+x1 = LpVariable('x_1', lowBound = 0)
+x2 = LpVariable('x_2', lowBound = 0)
+
+# Objective funciton 
+prob += 3*x1 + 5*x2, "Obj"
+# Constraints 
+prob += x1 <= 4
+prob += 2*x2 <= 12
+prob += 3*x1 + 2*x2 <= 18 
+print(prob)
+
+# command throug the object created (prob) to solve the model 
+prob.solve()
+# printing the status of the result will tell us whether the solution is optimal 
+# or the solution is infeasible 
+print("status: " + LpStatus[prob.status])
+
+if LpStatus[prob.status] == "Infeasible":
+    sys.exit("There is no feasible solution")
+# print the values for each variable
+for variable in prob.variables():
+    print("{}* = {}". format(variable.name, variable.varValue))
+ 
+# print the value of the objsecitve value
+print(value(prob.objective))
+
+# get the sensitivity analyis information 
+# "\n" prints a new line before each constraint
+# name is the name of the constraint
+# c is the constraint itself
+# slack is the difference between the left hand side and the right hand side of the 
+# constraint at the optimal solution 
+# shadow price is how much the objective value will change when the right-hand side of the 
+# constraint increases by 1 
+for name, c in prob.constraints.items():
+    print("\n", name, ":", c, ", Slack=", c.slack, ", Shadow Price=", c.pi)
+
