@@ -1,0 +1,48 @@
+# Portfolio Investment Risk Modeling 
+from pulp import *
+
+prob = LpProblem("My LP Problem", LpMinimize)
+
+x1 = LpVariable('Cisco', lowBound = 0, upBound = 200)
+x2 = LpVariable('Microsoft', lowBound = 0, upBound = 200)
+x3 = LpVariable('Intel', lowBound = 0, upBound = 200)
+x4 = LpVariable('BofA', lowBound = 0, upBound = 200)
+x5 = LpVariable('FirstBank', lowBound = 0, upBound = 200)
+x6 = LpVariable('ING', lowBound = 50, upBound = 200)
+
+# the goal is to minimize risk
+# Objective function
+prob += 14.02*x1 + 10.57*x2 + 13.22*x3 + 9.36*x4 + 7.61*x5 + 2.39*x6, "Obj"
+
+# Constraints 
+prob += x1 + x2 + x3 + x4 + x5 + x6 == 500, "Portfolio"
+prob += 0.08*x1 + 0.06*x2 + 0.05*x3 + 0.07*x4 + 0.04*x5 + 0.02*x6 >= 0.05*500, "Return"
+prob += x4 + x5 >= x1 + x2 + x3, "Balance"
+
+print(prob)
+
+# solve the problem
+prob.solve()
+# check the status
+print("status: " + LpStatus[prob.status])
+
+# print the value of each variabel in the optimal solution
+for variable in prob.variables():
+    print("{}* = {}".format(variable.name, variable.varValue))
+    
+print(value(prob.objective))
+
+# We add these lines for sensitivity analysis
+for name, c in prob.constraints.items():
+    print("\n", name, ":", ", Slack=", c.slack, ", Shadow Price=", c.pi)
+    
+for v in prob.variables(): 
+    print("\n", v.name, "=", v.varValue, ", Reduced Cost =", v.dj)
+
+# when reduced cost is negative, that means that the value for that variable is equalt to the upper bound.
+# if we add the value of the reduced cost to the coefficient, the reduced cost will be 0 when we rerun the model
+# in this example we could do this for BofA by changing the coefficient in the objective function to (0.07 + 2.935)*x4
+    
+    
+# for positive reduced cost values, the reduced cost can be brought to 0 by subtracting that amount from the coefficient 
+# of the corresponding variable in the objective function
