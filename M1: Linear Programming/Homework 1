@@ -1,0 +1,151 @@
+################# Problem 1 ###########################################
+# Objective function:
+# Profit = 50 x1  + 40 x2
+
+# Constraints:
+
+# C1: Number of units that can be produced of product A in a week  	x_1  ≤50
+# C2: Machine X limits 		3x_1+ x_2  ≤120
+# C3: Machine Y limits 		〖2x〗_1+ 〖4x〗_2  ≤100
+# C4: Lower Bound 		x_1,x_2  ≥0
+
+# import PuLP 
+from pulp import *
+
+# Create the problem 
+prob = LpProblem("Production Problem", LpMaximize)
+
+# Create decision variables
+x1 = LpVariable('x_1', lowBound = 0)
+x2 = LpVariable('x_2', lowBound = 0)
+
+# Objective function 
+prob += 50*x1 + 40*x2
+
+# Constraints
+prob += x1 <= 50
+prob += 3*x1 + x2 <= 120
+prob += 2*x1 + 4*x2 <= 100
+
+print(prob)
+
+# Solve the model
+prob.solve()
+
+# Print status of the model
+print("status: " + LpStatus[prob.status])
+
+# print the values for each variable
+for variable in prob.variables(): 
+    print("{}* = {}".format(variable.name, variable.varValue))
+    
+# Print the value of the objective function 
+print(value(prob.objective))
+
+# Sensitivity Analysis
+for name , c in prob.constraints.items():
+    print("\n", name, ":", c, ", Slack=", c.slack, ", Shadow Price=", c.pi)
+
+################# Problem 2 ###########################################
+# Implement the following LP Minimization model in Python. 
+
+# Min           Z=3x_1+4x_2+5x_3
+# S.t.
+# 2x_1+x_3≥8
+# x_2+x_3≥6
+# 6x_1+8x_2≥48
+# x_1,x_2,x_3≥0
+
+from pulp import *
+
+# Define the name of the model 
+prob = LpProblem("Min. Problem", LpMinimize)
+
+# Define the decision variables for the model
+x1 = LpVariable('x_1', lowBound = 0)
+x2 = LpVariable('x_2', lowBound = 0)
+x3 = LpVariable('x_3', lowBound = 0)
+
+# Define the objective function 
+prob += 3*x1 + 4*x2 + 5*x3
+
+# Add the constraints to the model
+prob += 2*x1 + x3 >= 8
+prob += x2 + x3 >= 6
+prob += 6*x1 + 8*x2 >= 48
+
+print(prob)
+
+# Solve the linear program
+prob.solve()
+
+# Print the status of the solution 
+print("status: " + LpStatus[prob.status])
+
+# Print the optimal values for each variable 
+for variable in prob.variables():
+    print("{}* = {}".format(variable.name, variable.varValue))
+
+# Print the value of the objective function 
+print(value(prob.objective))
+
+# Print the slack and shadow price for the constraints
+for name, c in prob.constraints.items():
+    print("\n", name, ":", c, ", Slack=", c.slack, ", Shadow Price=", c.pi)
+
+# Print the reduced cost for each variable 
+for v in prob.variables():
+    print("\n", v.name, "=", v.varValue, ", Reduced Cost=", v.dj)
+    
+################# Problem 3 ###########################################
+from pulp import *
+# Define the name of the model 
+prob = LpProblem("Investment Return", LpMaximize)
+
+# Define the decision variables 
+x1 = LpVariable('x_1', lowBound = 0)
+x2 = LpVariable('x_2', lowBound = 0)
+x3 = LpVariable('x_3', lowBound = 0)
+x4 = LpVariable('x_4', lowBound = 0)
+x5 = LpVariable('x_5', lowBound = 0)
+
+# Define the objective funciton
+prob += 0.095*x1 + 0.08*x2 + 0.09*x3 + 0.09*x4 + 0.09*x5
+
+# Create variable to hold the amount invested funds
+inv = 500000
+
+# Create the constraints 
+# Constrains that all that the investment funds are used
+prob +=  x1 + x2 + x3 + x4 +x5 == inv
+# Constrains for at least 50% in short term issues
+prob += x2 + x5 >= 0.5*inv
+# Constrains for no more than 50% in high risk 
+prob += x1 + x4 + x5 <= 0.5*inv
+# Constrains for at least 25% in tax free
+prob += x1 + x2 + x4 >= 0.25*inv
+
+print(prob)
+
+# Solve the linear program 
+prob.solve()
+
+# Check the status of the solution 
+print("Status: " + LpStatus[prob.status])
+
+# Print the values for each varaible at the optimal solution 
+for variable in prob.variables():
+    print("{}* = {}".format(variable.name, variable.varValue))
+
+# Print the return at the optimal solution
+print(value(prob.objective))
+
+# Conduct sensitivity analysis
+for name, c in prob.constraints.items():
+    print("\n", name, ":", ", Slack=", c.slack, ", Shadow Price=", c.pi)
+
+# Print reduced cost    
+for v in prob.variables(): 
+    print("\n", v.name, "=", v.varValue, ", Reduced Cost =", v.dj)
+    
+    
