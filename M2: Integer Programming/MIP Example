@@ -1,0 +1,43 @@
+# Example: MIP Example
+
+# Model in Python
+from pulp import *
+
+prob = LpProblem("WYNDOR GLASS CO.", LpMaximize)
+
+x1 = LpVariable('x1', lowBound = 0)
+x2 = LpVariable('x2', lowBound = 0)
+x3 = LpVariable('x3', lowBound = 0)
+y1 = LpVariable('y1', lowBound = 0, upBound = 1, cat = "Integer")
+y2 = LpVariable('y2', lowBound = 0, upBound = 1, cat = "Integer")
+y3 = LpVariable('y3', lowBound = 0, upBound = 1, cat = "Integer")
+y4 = LpVariable('y4', lowBound = 0, upBound = 1, cat = "Integer")
+
+# Objective function
+prob += 5*x1 + 7*x2 + 3*x3, "Z"
+
+bigM = 1000000
+
+# Constraints 
+prob += 3*x1 + 4*x2 + 2*x3 <= 30 + bigM*y4
+prob += 4*x1 + 6*x2 + 2*x3 <= 40 + bigM*(1-y4)
+prob += x1 <= 7
+prob += x2 <= 5
+prob += x3 <= 9
+prob += x1 <= bigM*y1
+prob += x2 <= bigM*y2
+prob += x3 <= bigM*y3
+prob += y1 + y2 + y3 <= 2
+
+print(prob)
+
+prob.solve()
+
+print(LpStatus[prob.status])
+
+for variable in prob.variables():
+    print("{}* = {}".format(variable.name, variable.varValue))
+    
+print("Z* = {}".format(value(prob.objective)))
+
+# The output shows that products 1 and 3 were chosen for production and Plant 2 was chosen
