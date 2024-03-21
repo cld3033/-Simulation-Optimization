@@ -1,0 +1,34 @@
+####################### Problem 1 ##############################
+# Max	3x_1+5x_2
+# S.t.
+#	x_1≤5
+# 	2x_2≤ 12
+# 	3x_1+2x_2≤20
+# 	x_1,x_2 are non-negative and integer
+
+from pulp import *
+
+prob = LpProblem("Maximization w/ Integers", LpMaximize)
+
+# Define the decison variables
+x1 = LpVariable("x_1", lowBound = 0, cat = "Integer")
+x2 = LpVariable("x_2", lowBound = 0, cat = "Integer")
+
+# Define the objective function 
+prob += 3*x1 + 5*x2
+
+# Define the constraints
+prob += x1 <= 5
+prob += 2*x2 <= 12
+prob += 3*x1 + 2*x2 <= 20
+
+print(prob)
+
+prob.solve()
+
+print("Status", LpStatus[prob.status])
+
+print("objective=", value(prob.objective))
+
+for v in prob.variables():
+    print(v.name, "=", v.varValue)
