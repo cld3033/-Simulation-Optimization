@@ -32,3 +32,50 @@ print("objective=", value(prob.objective))
 
 for v in prob.variables():
     print(v.name, "=", v.varValue)
+
+####################### Problem 2 ##############################
+# Minimize    260x_1+220x_2+290x_3+220x_4+240x_5+320x_6
+
+# Subject to:
+# x_1+ x_4==10
+# x_2+ x_5==15
+# x_3+ x_6==10
+# x_1+x_2+x_(3 )≤20
+# x_4+x_5+x_(6 )≤20
+# x_1,x_2,x_3,x_4,x_5,x_6 are non-negative integers. 
+
+from pulp import *
+
+prob = LpProblem("Supply Chain Problem", LpMinimize)
+
+# Define the decision variables 
+x1 = LpVariable("EutoMiami", lowBound = 0, cat = "Integer")
+x2 = LpVariable("EutoOrlando", lowBound = 0, cat = "Integer")
+x3 = LpVariable("EutoTalla", lowBound = 0, cat = "Integer")
+x4 = LpVariable("ClertoMiami", lowBound = 0, cat = "Integer")
+x5 = LpVariable("ClertoOrlando", lowBound = 0, cat = "Integer")
+x6 = LpVariable("ClertoTalla", lowBound = 0, cat = "Integer")
+
+# Define the objective function 
+prob += 260*x1 + 220*x2 + 290*x3 + 220*x4 + 240*x5 + 320*x6
+
+# Define the constraints 
+prob += x1 + x4 == 10 
+prob += x2 + x5 == 15
+prob += x3 + x6 == 10 
+prob += x1 + x2 + x3 <= 20
+prob += x4 + x5 + x6 <= 20
+
+print(prob)
+
+prob.solve()
+
+print("Status", LpStatus[prob.status])
+print("\n")
+
+print("Objective=", value(prob.objective))
+print("\n")
+
+for v in prob.variables():
+    print(v.name, "=", v.varValue)
+
