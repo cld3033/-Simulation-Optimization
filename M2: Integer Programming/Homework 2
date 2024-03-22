@@ -79,3 +79,54 @@ print("\n")
 for v in prob.variables():
     print(v.name, "=", v.varValue)
 
+######################### Problem 3 ################################
+# Minimize 4.5x_11+7.5x_12+3.5x_13+3x_14+ 5x_21+7.2x_22+4.5x_23+3.2x_24
+
+# Subject to:
+# x_11+x_12+x_13+x_14==2
+# x_21+x_22+x_23+x_24==2
+# x_11+x_21==1
+# x_12+x_22==1
+# x_13+x_23==1
+# x_14+x_24==1
+# x_11,x_12,x_13,x_14,x_21,x_22,x_23,x_24 are binary integers
+
+from pulp import * 
+prob = LpProblem("Household Tasks", LpMinimize)
+
+# Define decsion variables
+x11 = LpVariable("EveShopping", lowBound = 0, upBound = 1, cat = "Integer")
+x12 = LpVariable("EveCooking", lowBound = 0, upBound = 1, cat = "Integer")
+x13 = LpVariable("EveDishes", lowBound = 0, upBound = 1, cat = "Integer")
+x14 = LpVariable("EveLaundry", lowBound = 0, upBound = 1, cat = "Integer")
+x21 = LpVariable("SteveShopping", lowBound = 0, upBound = 1, cat = "Integer")
+x22 = LpVariable("SteveCooking", lowBound = 0, upBound = 1, cat = "Integer")
+x23 = LpVariable("SteveDishes", lowBound = 0, upBound = 1, cat = "Integer")
+x24 = LpVariable("SteveLaundry", lowBound = 0, upBound = 1, cat = "Integer")
+
+# Define the objective function
+prob += 4.5*x11 + 7.5*x12 + 3.5*x13 + 3*x14 + 5*x21 + 7.2*x22 + \
+    4.5*x23 + 3.2*x24
+
+# Define the constraints
+prob += x11 + x12 + x13 + x14 == 2
+prob += x21 + x22 + x23 + x24 == 2
+prob += x11 + x21 == 1
+prob += x12 + x22 == 1
+prob += x13 + x23 == 1
+prob += x14 + x24 == 1
+
+print(prob)
+
+prob.solve()
+
+print("Status", LpStatus[prob.status])
+print("\n")
+
+print("Objective=", value(prob.objective))
+print("\n")
+
+for v in prob.variables():
+    print(v.name, "=", v.varValue)
+
+
