@@ -129,4 +129,53 @@ print("\n")
 for v in prob.variables():
     print(v.name, "=", v.varValue)
 
+########################### Problem 4 ######################################
+# x_1 = units of product 1
+# x_2 = units of product 2
+# y_1 = 1 when product 1 is chosen for production, is 0 otherwise.
+# y_2 = 1 when product 2 is chosen for production, is 0 otherwise.
+# y_3 = 1 when factory 1 is chosen, is 0 when factory 2 is chosen.
 
+# Objective function: 
+# Maximize (10x_1 – 50,000y_1) + (15x_2 – 70,000y_2)
+
+# Subject to:
+# x_1= ≤My_1
+# x_2= ≤My_2
+# 1/50 x_1  +  1/40 x_2  = ≤500+M(1-y_3)
+# 1/40 x_1  +  1/25 x_2  = ≤700+My_3
+# x_1  ,x_2  are non-negative integers.
+# y_1,y_2, y_3 are non-negative binary integers.  
+
+from pulp import *
+prob = LpProblem("Production Problem", LpMaximize)
+
+# Define the decision varibales 
+x1 = LpVariable("Product1", lowBound = 0, cat = "Integer")
+x2 = LpVariable("Product2", lowBound = 0, cat = "Integer")
+y1 = LpVariable("UseProduct1", lowBound = 0, upBound = 1, cat = "Integer")
+y2 = LpVariable("UseProduct2", lowBound = 0, upBound = 1, cat = "Integer")
+y3 = LpVariable("UsePlant1", lowBound = 0, upBound = 1, cat = "Integer")
+bigM = 10000000
+
+# Define the objective function
+prob += (10*x1 - 50000*y1) + (15*x2 - 70000*y2)
+
+# Define the constraints 
+prob += x1 <= bigM*y1
+prob += x2 <= bigM*y2
+prob += (1/50)*x1 + (1/40)*x2 <= 500 + bigM*(1-y3)
+prob += (1/40)*x1 + (1/25)*x2 <= 700 + bigM*y3
+
+print(prob)
+
+prob.solve()
+
+print("Status: ", LpStatus[prob.status])
+print("\n")
+
+print("objective = ", value(prob.objective))
+print("\n")
+
+for v in prob.variables():
+    print(v.name, "=", v.varValue)
