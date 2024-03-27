@@ -1,0 +1,78 @@
+# A firm is considering producing and selling a new product
+# under a pure/perfect competition market, and the firm wants
+# to know the probability distribution for the profit associated
+# with this product.
+# The equation gives the total profit:
+#   𝑇𝑇𝑇𝑇 = (𝑄𝑄 ∗ 𝑃𝑃) − (𝑄𝑄 ∗ 𝑣𝑣 + 𝐹𝐹)
+# Where:
+#   • 𝑄𝑄 is the quantity sold
+# • 𝑣𝑣 is the variable cost per unit
+# • 𝑃𝑃 is the sales price per unit
+# • 𝐹𝐹 is the fixed cost for producing the product
+# For this product, Q, P, and V are random variables with the
+# following distributions:
+#   • 𝑄𝑄: uniform (8000, 12000)
+# • 𝑃𝑃: normal(mean = 10, sd = 3) truncated on the “left” at 1.0
+# • 𝑣𝑣: normal(mean = 7, sd = 2) truncated on the “left” at 3.5
+# and on the “right” at 10
+# • F is estimated to be 5000.
+# Want to use Monte Carlo simulation to characterize the
+# distribution of total profit for the proposed product.
+# Is it a cost-benefit business?
+
+library(truncnorm)
+
+set.seed(123)
+num_sim <- 1000 # generate you data for quantity sold (larger simulation size is better)
+
+Q <- runif(num_sim, 8000, 12000) # 8000 and 12000 are the min and max of the distribution 
+P <- rtruncnorm(num_sim, a = 1, mean = 10, sd = 3)
+v <- rtruncnorm(num_sim, a = 3.5, b = 10, mean = 7, sd = 2)
+F <- 5000
+
+TP <- Q*P - (Q*v + F)
+
+mean(TP)
+
+hist(TP)
+
+# Risk of zero or negative profit:
+mean(TP <= 0)
+
+# In a long-run, the expected profit for this business is about $26000, but the risk of not 
+# gaining or losing money is about %, which is high.
+
+
+############################################################################################
+# Example: Expected Profit Risk Analysis
+# What if we do not know the exact value for the fixed cost?
+#   We ask our experts about the minimum, maximum, and the
+# most likely possible option for the fixed cost; then, we form a
+# Triangular distribution for the fixed cost value in our simulation.
+# Here, we assume the fixed cost has a triangular distribution
+# with a minimum of $4500, a maximum of $6000, and the most likely value of $5000.
+# Other parameters are similar to the previous example.
+
+library(truncnorm)
+
+set.seed(123)
+
+num_sim <- 100000 
+
+Q <- runif(num_sim, 8000, 12000) 
+P <- rtruncnorm(num_sim, a = 1, mean = 10, sd = 3)
+v <- rtruncnorm(num_sim, a = 3.5, b = 10, mean = 7, sd = 2)
+
+library(triangle)
+
+F <- rtriangle(num_sim, a = 4500, b = 6000, c = 5000)
+
+TP <- Q*P - (Q*v + F)
+
+# Expected profit in the long-run 
+mean(TP)
+
+hist(TP)
+
+# Risk of 0 or negative profit
+mean(TP <= 0)
