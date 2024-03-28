@@ -1,0 +1,150 @@
+# 1. What is the risk that the net present value over the 5 years will
+# not be positive?
+
+# 2. What are the product's chances to show a positive cumulative
+# net profit in the 3rd year?
+
+# 3. Create a boxplot for the cumulative net profit over 10 years (for each year). 
+
+# Non-stochastic parameters
+set.seed(123)
+
+marketShare = 0.08
+unitRevenue = 130
+unitCost = 40
+discountRate = 0.09
+
+# Other parameters are stochastic, and we need to simulate them.
+num_sim = 1000
+# Data
+year = 10
+
+# Create function for annual profit 
+AnnualProfit = function(year, marketSize, marketSizeGrowth, marketShare, marketShareGrowth,
+                        unitRevenue, unitCost){
+  marketSize = marketSize*(1 + marketSizeGrowth)^(year - 1)
+  marketShare = marketShare*(1 + marketSharGrowth)^(year - 1)
+  sale = marketSize*marketShare
+  annualRevenue = 12 * sale * unitRevenue
+  annualCost = 12 * sale * unitCost
+  return(annualRevenue - annualCost)
+}
+
+# Create net present profit function
+# net-present profit model 
+netPresentProfit <- function(discountRate, profit, year){
+  netProfit <- 0
+  for (t in 1:year){
+    netProfit <- netProfit + profit[t]/(1+discountRate)^t
+  }
+  return(netProfit)
+}
+
+# Here, in each itteration, we only produce one random variate for each parameter.
+# we repeat the process num_sim times 
+# Then we record each calculated npv in to a vector called simulated_npv
+simulated_npv <- c()
+for (i in 1:num_sim) {
+  marketSize = rnorm(1, 2e6, 4e5)
+  marketSizeGrowth = rtriangle(1, a = 0.02, b = 0.06, c = 0.03)
+  marketShareGrowth = rtriangle(1, a = 0.15, b = 0.25, c = 0.20)
+  
+  # Project Cost
+  rdCost = runif(1, 600e6, 800e6)
+  
+  clinicalCost = rnorm(1, 150e6, 10e6)
+  
+  projectCost = rdCost + clinicalCost
+  
+  profit <- AnnualProfit(1:year, marketSize, marketSizeGrowth, marketShare, 
+                         marketShareGrowth, unitRevenue, unitCost)
+  
+  npvProfit <- netPresentProfit(discountRate, profit, year)
+  
+  npv = npvProfit - projectCost
+  
+  simulated_npv <- c(simulated_npv, npv)
+}
+
+# Q1: Risk
+mean(simulated_npv <= 0)
+
+# Q2 
+set.seed(123)
+
+num_sim = 1000
+
+# Data
+year = 3 
+
+simulated_cumNetProfit <- c()
+
+for (i in 1:num_sim){
+  marketSize = rnorm(1, 2e6, 4e5)
+  marketSizeGrowth = rtriangle(1, a = 0.02, b = 0.06, c = 0.03)
+  marketShareGrowth = rtriangle(1, a = 0.15, b = 0.25, c = 0.20)
+  
+  # Project Cost
+  rdCost = runif(1, 600e6, 800e6)
+  
+  clinicalCost = rnorm(1, 150e6, 10e6)
+  
+  projectCost = rdCost + clinicalCost
+  
+  profit <- AnnualProfit(1:year, marketSize, marketSizeGrowth, marketShare, 
+                         marketShareGrowth, unitRevenue, unitCost)
+  
+  cum_profit <- cumsum(profit)
+  
+  cumNetProfit = cum_profit - projectCost
+  
+  simulated_cumNetProfit <- c(simulated_cumNetProfit, cumNetProfit[year])
+}
+
+mean(simulated_cumNetProfit > 0)
+
+hist(simulated_cumNetProfit)
+
+# Q3
+set.seed(123)
+
+year = 10
+
+simulated_Annual_cumNetProfit = matrix(nrow = num_sim
+                                      , ncol = n_year)
+for(i in 1:num_sim){
+  marketSize = rnorm(1, 2e6, 4e5)
+  Histogram of simulated_cumNetProfit
+  simulated_cumNetProfit
+  Frequency
+  -6e+08 -4e+08 -2e+08 0e+00 2e+08 4e+08
+  0 50 100 150 200 250
+  marketSizeGrowth = rtriangle(1, a = 0.02, b = 0.06,
+                               c = 0.03)
+  marketShareGrowth = rtriangle(1, a = 0.15, b = 0.25
+                                , c = 0.20)
+  # Project Cost
+  rdCost = runif(1, 600e6, 800e6)
+  
+  clinicalCost = rnorm(1, 150e6, 10e6)
+  
+  projectCost = rdCost + clinicalCost
+  
+  Annual_profit <- AnnualProfit(1:n_year, marketSize,
+                                marketSizeGrowth, marketShare, marketShareGrowth, uni
+                                tRevenue, unitCost)
+  
+  Annual_cum_profit <- cumsum(Annual_profit)
+  Annual_cumNetProfit <- Annual_cum_profit - projectC
+  ost
+  # In each iteration, we insert a vector of 10 years
+  Annual_cumNetProfit to each row of the simulated_Annu
+  al_cumNetProfit matrix.
+  simulated_Annual_cumNetProfit[i,] <- Annual_cumNetP
+  rofit
+}
+
+boxplot(simulated_Annual_cumNetProfit, main = "Cumulative Net Profit Boxplots", 
+        xlab = "Year")
+abline(h = 0, col = "red")
+
