@@ -108,19 +108,22 @@ hist(simulated_cumNetProfit)
 # Q3
 set.seed(123)
 
+num_sim = 1000
+
 year = 10
 
 simulated_Annual_cumNetProfit = matrix(nrow = num_sim
-                                      , ncol = n_year)
+                                       , ncol = year)
 for(i in 1:num_sim){
   marketSize = rnorm(1, 2e6, 4e5)
-  Histogram of simulated_cumNetProfit
-  simulated_cumNetProfit
-  Frequency
-  -6e+08 -4e+08 -2e+08 0e+00 2e+08 4e+08
-  0 50 100 150 200 250
+  # Histogram of simulated_cumNetProfit
+  # simulated_cumNetProfit
+  # Frequency
+  # -6e+08 -4e+08 -2e+08 0e+00 2e+08 4e+08
+  # 0 50 100 150 200 250
   marketSizeGrowth = rtriangle(1, a = 0.02, b = 0.06,
                                c = 0.03)
+  
   marketShareGrowth = rtriangle(1, a = 0.15, b = 0.25
                                 , c = 0.20)
   # Project Cost
@@ -130,18 +133,15 @@ for(i in 1:num_sim){
   
   projectCost = rdCost + clinicalCost
   
-  Annual_profit <- AnnualProfit(1:n_year, marketSize,
-                                marketSizeGrowth, marketShare, marketShareGrowth, uni
-                                tRevenue, unitCost)
+  Annual_profit <- AnnualProfit(1:year, marketSize,
+                                marketSizeGrowth, marketShare, marketShareGrowth, unitRevenue, unitCost)
   
   Annual_cum_profit <- cumsum(Annual_profit)
-  Annual_cumNetProfit <- Annual_cum_profit - projectC
-  ost
+  Annual_cumNetProfit <- Annual_cum_profit - projectCost
   # In each iteration, we insert a vector of 10 years
-  Annual_cumNetProfit to each row of the simulated_Annu
-  al_cumNetProfit matrix.
-  simulated_Annual_cumNetProfit[i,] <- Annual_cumNetP
-  rofit
+  # Annual_cumNetProfit to each row of the simulated_Annu
+  # al_cumNetProfit matrix.
+  simulated_Annual_cumNetProfit[i,] <- Annual_cumNetProfit
 }
 
 boxplot(simulated_Annual_cumNetProfit, main = "Cumulative Net Profit Boxplots", 
