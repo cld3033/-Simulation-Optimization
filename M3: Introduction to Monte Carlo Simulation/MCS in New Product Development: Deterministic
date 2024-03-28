@@ -1,0 +1,54 @@
+# The copany needs to know how long it will take to recover its fixed expenses 
+# and the net present value over the first 5 years
+
+# Data
+marketSize = 2e6 # 2 million 
+marketSizeGrowth = 0.03
+marketShare = 0.08
+marketShareGrowth = 0.2
+unitRevenue = 130
+unitCost = 40
+discountRate = 0.09
+
+# Project Cost
+rdCost = 700e6
+clinicalCost = 150e6
+
+projectCost = rdCost + clinicalCost
+projectCost
+
+# Model
+AnnualProfit = function(year, marketSize, marketSizeGrowth, marketShare, marketShareGrowth,
+                        unitRevenue, unitCost){
+  marketSize = marketSize*(1 + marketSizeGrowth)^(year - 1)
+  marketShare = marketShare*(1 + marketSharGrowth)^(year - 1)
+  sale = marketSize*marketShare
+  annualRevenue = 12 * sale * unitRevenue
+  annualCost = 12 * sale * unitCost
+  return(annualRevenue - annualCost)
+}
+
+# Annual profit
+profit <- AnnualProfit(1:5, marketSize, marketSizeGrowth, marketShare, marketShareGrowth, 
+                       unitRevenue, unitCost)
+
+# How long will it take to recover fixed expenses
+cumsum(profit) - projectCost
+# Company recovered its fixed expenses by year 4 
+
+# net-present profit model 
+netPresentProfit <- function(discountRate, profit, year){
+  netProfit <- 0
+  for (t in 1:year){
+    netProfit <- netProfit + profit[t]/(1+discountRate)^t
+  }
+  return(netProfit)
+}
+
+# Net present profit in year 5
+npvProfit <- netPresentProfit(discountRate, profit, 5)
+
+# Net present value in year 5
+npv = npvProfit - projectCost
+npv
+# The net present value over the first 5 years is $185,404,860
