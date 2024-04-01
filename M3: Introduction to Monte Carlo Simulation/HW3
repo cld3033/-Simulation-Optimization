@@ -1,0 +1,76 @@
+############################ Problem 3 #########################################
+##### Part A 
+
+# install.packages("triangle")
+library(triangle)
+
+# Deterministic variables
+marketSizeGrowth = 0.05
+marketShareGrowth = 0.1
+unitRevenue = 150 
+unitCost = 50 
+discountRate = 0.08
+
+num_sim = 1000 # number of simulations
+year = 5
+
+# Create function for annual profit
+AnnualProfit <- function(year, marketSize, marketSizeGrowth, marketShare, 
+                         marketShareGrowth, unitRevenue, unitCost){
+  marketSize = marketSize*(1 + marketSizeGrowth)^(year-1)
+  marketShare = marketShare*(1 + marketShareGrowth)^(year-1)
+  sale = marketSize*marketShare
+  annualRevenue = 12 * sale * unitRevenue
+  annualCost = 12 * sale * unitCost
+  return(annualRevenue - annualCost)
+}
+
+# Create function for net present profit 
+netPresentProfit <- function(discountRate, profit, year){
+  netProfit <- 0
+  for (t in 1:year){
+    netProfit <- netProfit + profit[t]/(1+discountRate)^t
+  }
+  return(netProfit)
+}
+
+
+# Set the seed to obtain reproduceable numbers
+set.seed(123)
+
+simulated_npv <- c()
+
+# Simulate the net present value
+for (i in 1:num_sim){
+  marketSize = rnorm(1, mean = 2.2e6, sd = 0.25e6)
+  marketShare = runif(1, 0.05, 0.1)
+  
+  # Project Cost
+  rdCost = rtriangle(1, a = 500e6, b = 850e6, c = 750e6)
+  clinicalCost = runif(1, 135e6, 170e6)
+  projectCost = rdCost + clinicalCost
+  
+  profit <- AnnualProfit(1:year, marketSize, marketSizeGrowth, marketShare, 
+                         marketShareGrowth, unitRevenue, unitCost)
+  
+  npvProfit <- netPresentProfit(discountRate, profit, year)
+  
+  npv <- npvProfit - projectCost
+  
+  simulated_npv <- c(simulated_npv, npv)
+}
+
+# Mean net present value over the next 5 years
+mean(simulated_npv)
+
+# standard deviation of net present value over the next 5 years
+sd(simulated_npv)
+
+##### Part B
+
+# Probability of a negative npv
+mean(simulated_npv < 0)
+
+# Histogram of simulated_npv
+hist(simulated_npv)
+abline(v = 0, col = 'red')
