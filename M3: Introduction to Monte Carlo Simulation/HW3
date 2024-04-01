@@ -74,3 +74,57 @@ mean(simulated_npv < 0)
 # Histogram of simulated_npv
 hist(simulated_npv)
 abline(v = 0, col = 'red')
+
+################################## Problem 4 ##################################
+#### Part A
+
+set.seed(123)
+
+# Define known constant variables
+C = 12 # Cost per unit
+R = 18 # Selling price
+S = 10 # Salvage value
+
+# Create net profit function 
+netProfitFun <- function(D, Q, R, S, C){
+  R*min(D, Q) + S*max(0, Q-D) - C*Q
+}
+
+# number of simulations
+n_sim = 10000
+
+# Set a range of values for Q to evaluate
+Qrange <- 35:50
+
+# simulate the demand, given it has a poisson distribution with a mean of 40
+d_sim <- rpois(n_sim, 40)
+
+# Estimate profits for each Q
+profitMatrix <- matrix(nrow = n_sim, ncol = length(Qrange))
+
+j = 0
+
+for (Q in Qrange){
+  j = j+1
+  for (i in 1:n_sim){
+    profitMatrix[i, j] <- netProfitFun(d_sim[i], Q, R, S, C)
+  }
+}
+
+# Expected value for each Q 
+profit_for_each_Q <- colMeans(profitMatrix)
+profit_for_each_Q
+
+cbind(Qrange, profit_for_each_Q)
+
+best_Q_index <- which.max(profit_for_each_Q)
+Qrange[best_Q_index]
+
+# Based on the simulations 44 is the optimal purchase quantity
+
+#### Part B
+
+plot(Qrange, colMeans(profitMatrix), ylab = "Expected Profit", xlab = "Q")
+abline(v = Qrange[best_Q_index], h = profit_for_each_Q[best_Q_index], col = "red")
+
+# Don't forget to explain the outcome.
