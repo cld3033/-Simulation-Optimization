@@ -1,0 +1,176 @@
+# Newsvendor Model
+
+# Example: A Single-Period Purchase Decision Model
+# Suppose that a small candy store makes Valentine’s Day gift
+# boxes that cost $12.00 and sell for $18.00. In the past, at least
+# 40 boxes have been sold by Valentine’s Day, but the actual
+# amount is uncertain, and in the past, the owner has often run
+# short or made too many. After the holiday, any unsold boxes
+# are discounted by 50% and are eventually sold.
+# The net profit can be calculated for any values of Q and D:
+#   net profit = $18.00 × min{𝐷,𝑄} + $9.00 × max{0, 𝑄 − 𝐷} - $12.00 × Q
+
+# Data 
+R = 18 # Selling price
+C = 12 # Cost 
+S = 9  # Discoutn price 
+
+# Model 
+netProfitFun <- function(D, Q, R, S, C){
+  R*min(D, Q) + S*max(0, Q-D) - C*Q
+}
+
+# Suppose that the store owner kept records for the past 20 years on the number
+# of boxes sold. The historical candy sales average is 44.05
+
+histDemand <- read.csv("https://raw.githubusercontent.com/cld3033/-Simulation-Optimization/main/M3%3A%20Introduction%20to%20Monte%20Carlo%20Simulation/histDemand.csv")
+
+mean(histDemand$Sales)
+
+# The Flaw of Averages
+# The model output using the average value of the input is not
+# necessarily equal to the average value of the outputs when
+# evaluated with each input value.
+# Using 44 for demand and 𝑄𝑄, the model predicts a profit of
+# $264.00.
+
+# Based on average historical data (we round it down to the neares integer)
+mean_D = 44
+
+# Rationally we make 44 boxes
+Q = 44
+
+netProfitFun(mean_D, Q, R, S, C)
+
+# However, if we construct a data table to evaluate the profit for
+# each historical value, the average profit is only $255.00.
+
+# Assuming we make 44 boxes
+Q = 44
+
+hist_D = histDemand$Sales
+
+profitVector <- c()
+
+for (i in 1:length(hist_D)){
+  profitVector[i] <- netProfitFun(hist_D[i], Q, R, S, C)
+}
+
+# Or you can use sapply function instead of for-loop
+# profitVector = sapply(hist_D, netProfitFun, Q, R, S, C)
+
+mean(profitVector)
+
+# The evaluation of a model output using the average value of the
+# input (profit =264) is not necessarily equal to the average
+# value of the outputs when evaluated with each of the input
+# values (profit =255). Why? In the newsvendor example, the
+# quantity sold is limited to the smaller of the demand and
+# purchase quantity (min(D, Q)), so even when demand exceeds
+# the purchased quantity, the profit is limited.)
+
+# Simulating the Newsvendor Model Using
+# Resampling (from historical data)
+
+# Generate candy sales by resampling from the 20 historical
+# values.
+
+set.seed(123)
+
+num_sim = 10000
+
+# Here, we assume that the data generation process follows the empirical 
+# distribution of the historical data
+
+sim_D <- sample(hist_D, num_sim, replace = TRUE)
+
+profit_sim <- c()
+
+for (i in 1:num_sim){
+  profit_sim[i] <- netProfitFun(sim_D[i], Q, R, S, C)
+}
+
+mean(profit_sim)
+# This is the expected profit given the historical data.
+
+# Question: In the Newsvendor Model, suggest the best
+# purchase quantity Q using resampling from historical
+# data. 
+
+# Data 
+R = 18 # Selling price
+C = 12 # Cost 
+S = 9  # Discoutn price 
+
+# Q = 44 is suggested. Is it the best? If not, why?
+num_sim = 1000
+
+Qrange = 40:50
+
+
+sim_D <- sample(hist_D, num_sim, replace = TRUE)
+
+profitMatrix <- matrix(0, nrow = num_sim, ncol = length(Qrange))
+
+j = 0 
+
+for (Q in Qrange){
+  j = j + 1
+  for (i in 1:num_sim){
+    profitMatrix[i, j] = netProfitFun(sim_D[i], Q, R, S, C)
+  }
+}
+
+# Expected profit for each Q
+colMeans(profitMatrix)
+
+profit_for_each_Q <- colMeans(profitMatrix)
+cbind(Qrange, profit_for_each_Q)
+
+plot(Qrange, colMeans(profitMatrix), ylab = "Expected Profit", xlab = "Q")
+best_Q_index <- which.max(profit_for_each_Q)
+abline(v = Qrange[best_Q_index], h = profit_for_each_Q[best_Q_index], col = "red")
+
+# The empirical distribution may not adequately represent the true underlying population
+# because of sampling error. 
+
+# Using an empirical distribution precludes sampling values outside the range of the actual
+# data. It is usually advisable to fit a distribution (e.g., normal, Poisson, uniform, etc.) 
+# and use it to simulate instances for the uncertain variable.
+
+
+# Question: In the Newsvendor Model, suggest the best
+# purchase quantity Q using a truncated normal distribution
+# with a mean of 42, the standard deviation of 3.4, and the lower bound of 38.
+
+
+# Recall Data Again
+R = 18 # Selling price
+C = 12 # Cost
+S = 9  # Discount Price
+
+# Q = 44 is suggested. Is it the best? If not, what Q
+num_sim = 1000
+
+Qrange = 40:50
+
+# Here, we need to change the data generating process to truncnorm distribution
+library(truncnorm)
+sim_D <- rtruncnorm(num_sim, a = 38, mean = 42, sd =
+                      3.4) # resampling
+profitMatrix <- matrix(nrow = num_sim, ncol = length(Qrange))
+j = 0
+for (Q in Qrange) {
+  j = j+1
+  for (i in 1:num_sim) {
+    profitMatrix[i, j] = netProfitFun(sim_D[i], Q, R, S, C)
+  }
+}
+# Expected (average) profit for each Q
+profit_for_each_Q <- colMeans(profitMatrix)
+cbind(Qrange, profit_for_each_Q)
+
+best_Q_index <- which.max(profit_for_each_Q)
+
+plot(Qrange, colMeans(profitMatrix), ylab = "Expected Profit", xlab = "Q")
+abline(v = Qrange[best_Q_index], h = profit_for_each_Q[best_Q_index], col = "red")
