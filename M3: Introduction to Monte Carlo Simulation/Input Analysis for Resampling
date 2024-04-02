@@ -1,0 +1,118 @@
+# Newsvendor model with historical data for demand. We are interested to know what 
+# distribution we can fit to this data.
+git <- "https://raw.githubusercontent.com/cld3033/"
+raw <- "-Simulation-Optimization/main/M3%3A%20Introduction%20to%20Monte%20Carlo%20Simulation/"
+file <- "histDemand.csv"
+data <- read.csv(paste0(git, raw, file))
+
+# 1. Data is discrete
+
+# 2. Visualize the data
+hist(data$Sales, main = "Historical Demand")
+# the distribution of the date is positively skewed (right) and unimodal
+
+plot(data$Sales, type = "b", main = "Historical Demand", ylab = "Count",
+     xlab = "Each Year")
+# There is no noticeable trend in the time series plot 
+# Data points appear to be independent of each other
+
+acf(data$Sales, main = "ACF Plot for Computer Lab Arrivals") # Auto-correlation plot
+# the autocorrelation plot shows no significant correlation with respect to observation 
+# number (all lags are well within the confidence band). Therefor, the data
+# appears to be stationary (IID).
+
+# This tells us that the data is stationary and does not have correlation with itself
+
+# 3. Hypothesizing distributions.
+library(fitdistrplus)
+descdist(data$Sales, discrete = TRUE)
+# the observation represents are data. We want to select the distribution that is 
+# closest to this point. This visualization shows it could be either Poisson or negative
+# binomial. 
+
+# Let's try Poisson 
+fit.nbinom <- fitdist(data$Sales, "nbinom")
+summary(fit.nbinom)
+fit.pois <- fitdist(data$Sales, "pois")
+summary(fit.pois)
+# larger log likelihood is better
+
+gofstat(fit.pois)
+# the p-value for the chi-squared distribution is < 0.05, so we reject the null 
+# hypothesis that poisson is a good fit. It is not a good fit 
+# nbinom had similar results, so it is better to use resampling
+
+# Now we try continuous distributions:
+# The sample's kurtosis and squared skewness are plotted as an
+# "Observation" blue point. Candidate distributions include
+# Gamma, Weibull, and possibly Normal distribution.
+
+descdist(data$Sales, discrete = FALSE)
+
+fit.gamma <- fitdist(data$Sales, "gamma")
+summary(fit.gamma)
+
+fit.weibull <- fitdist(data$Sales, "weibull")
+summary(fit.weibull)
+
+fit.norm <- fitdist(data$Sales, "norm")
+summary(fit.norm)
+
+plot(fit.gamma)
+
+plot(fit.weibull)
+
+plot(fit.norm)
+
+# both gamma and normal look good
+
+fit.gamma$loglik
+fit.norm$loglik
+# gamma is slightly better
+
+g <- gofstat(fit.gamma)
+g$chisqpvalue
+# we fail to fail to reject the null hypothesis that this is a good distribution 
+
+summary(fit.gamma)
+# shape and rate can be used to simulate gamma random numbers
+
+# Let's solve the newsVendor model again; this time we assume demand is 
+# distributed by Gamma distribution with a shape value of 295.63 and rate value of 6.71
+
+# Data
+R = 18 # Selling price
+C = 12 # Cost
+S = 9 # Discount Price
+# Model
+netProfitFun = function(D, Q, R, S, C){
+  R*min(D,Q) + S * max(0, Q-D) - C*Q
+}
+
+num_sim = 1000
+Qrange = 40:50
+sim_D = rgamma(num_sim, shape = 295.63, rate = 6.71)
+
+profitMatrix <- matrix(0, nrow = num_sim, ncol = length(Qrange))
+
+j = 0
+
+for (Q in Qrange) {
+  j = j+1
+  for (i in 1:num_sim) {
+    profitMatrix[i, j] = netProfitFun(sim_D[i], Q, R,
+                                      S, C)
+  }
+}
+# Expected (average) profit for each Q
+profit_for_each_Q <- colMeans(profitMatrix)
+cbind(Qrange, profit_for_each_Q)
+
+
+plot(Qrange, profit_for_each_Q, ylab = "Expected Profit", xlab = "Q")
+best_Q_index <- which.max(profit_for_each_Q)
+abline(v = Qrange[best_Q_index], h = profit_for_each_Q[best_Q_index], col = "red")
+
+# Q* = 45, The optimal Q is 45
+# The 95% confidence interval of maximum profit is:
+quantile(profitMatrix[, best_Q_index], c(0.025, 0.975))
