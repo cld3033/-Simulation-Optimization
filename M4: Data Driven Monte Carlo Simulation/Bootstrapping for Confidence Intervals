@@ -1,0 +1,211 @@
+# Example 1: Find a 95% confidence interval by bootstrapping for the mean of the 
+# “income” variable in “Prestige” dataset. Compare your answer with the theoretical 
+# confidence interval using the central limit theorem.
+
+library("car")
+data("Prestige")
+income <- Prestige$income
+mean(income)
+
+# takes 1 sample the size of the original data with replacement and returns the mean
+boot_mean <- function(x){
+  mean(sample(x, replace = TRUE))
+}
+
+# perform and store the boot_mean fuction 1000 times. results in means from 1000 samples.
+num_sim <- 1000
+
+boot_income_rep <- replicate(num_sim, boot_mean(income))
+
+# Bootstrapping answer 
+# returns the bounds of the 95% confidence interval
+quantile(boot_income_rep, c(0.025,0.975))
+
+
+# Central Limit Theorum (CLT) Asnswer
+xbar = mean(income)
+
+# xbar (+-) 1.96 * sigma/sqrt(n)
+se <- qnorm(0.975)*sd(income)/sqrt(length(income))
+
+# low bound 
+xbar - se
+# upper bound
+xbar + se
+
+# Opinion of the professor: bootstrapping is more accurate than CLT, because in
+# bootstrapping we don't make any assumption about the normality of the data.
+
+# Example: find a 95% confidence interval by bootstrapping for the standard dev. 
+# of "income" varible in "Prestige" dataset.
+
+income <- Prestige$income
+sd(income)
+
+boot_sd <- function(x){
+  sd(sample(x, replace = TRUE))
+}
+
+num_sim = 1000
+
+boot_income_rep <- replicate(num_sim, boot_sd(income))
+
+# bootstrapping answer 
+quantile(boot_income_rep, c(0.025, 0.975))
+
+
+# Find 95% confidence interval by bootstrapping for the correlation between "income"
+# and "education" variables in the "prestige" dataset.
+
+income <- Prestige$income
+education <- Prestige$education
+
+data <- cbind(income, education)
+
+cor(data)[1,2]
+
+boot_cor <- function(x){
+  rowIndex = sample(nrow(x), replace = TRUE)
+  cor(x[rowIndex,])[1,2]
+}
+
+num_sim = 1000
+
+boot_income_rep <- replicate(num_sim, boot_cor(data))
+
+# bootstrapping answer 
+quantile(boot_income_rep, c(0.025, 0.975))
+
+# The New York Times had on January 27, 1987, on its front page
+# an article entitled Heart Attack Risk Found to be cut by taking
+# Aspirin. This double-blind trial ultimately led to the following
+# table; see also Efron and Tibshirani (1993):
+#   Heart Attacks Sample Size
+# Aspirin 104 11037
+# Placebo 189 11034
+# The odds ratio of the two components is the following:
+#   (104/11,037)/(189/11,034) = 0.55
+
+# A newspaper header could be: Those who take Aspirin
+# regularly have only 55% as many heart attacks as people who
+# take no aspirin.
+# As statisticians, we want to estimate the real population odd ratio parameter 𝜃.
+# Of course, we are not interested in only a point estimate of 𝜃^. If
+# we conducted the study again and collected new data, we
+# would get another result (different from 0.55).
+# We are interested in the accuracy/variability/uncertainty of = 0.55 (statistical inference).
+
+# But how do we calculate the confidence interval (CI) for 𝜃^?
+# There is a theoretical formula for this estimation contingent on
+# the normality assumption.
+# Heart Attacks #Persons
+#     Aspirin a c
+#     Placebo b d
+# log(𝜃^) ± 1.96 ∗ sqrt(1/𝑎 + 1/𝑏 + 1/𝑐 + 1/d)
+
+# Bootstrapping 
+
+# Original surveyed data
+s1 <- rep(c(TRUE, FALSE), times = c(104, 11037-104))
+s2 <- rep(c(TRUE, FALSE), times = c(189, 11034-189))
+
+# funciton for drawing bootstrap sample
+# and estimating the bootstrap replicate
+
+boot_oddRatio <- function(s1, s2){
+  # odds ratio
+  # sampling with replacement
+  ac <- sum(sample(s1, replace = TRUE))/length(s1)
+  bd <- sum(sample(s2, replace = TRUE))/length(s2)
+  oddsRatio <- ac/bd
+  return(oddsRatio)
+}
+
+num_sim = 1000
+
+boot_repl <- replicate(num_sim, boot_oddRatio(s1, s2))
+
+## confidence interval 
+quantile(boot_repl, c(0.025, 0.975))
+
+# distribution of the odds ratio
+hist(boot_repl)
+
+
+# The Application of Bootstrapping in Hypothesis Testing
+# The question is whether the difference between average food
+# expenses in spring 2014 and fall 2014 is explainable by a null
+# model where all data are produced as i.i.d by the same
+# distribution.
+# In other words, we want to test:
+#   𝐻0: 𝜇1 − 𝜇2 = 0
+
+git1 <- "https://raw.githubusercontent.com/cld3033/"
+raw1 <- "-Simulation-Optimization/main/M4%3A%20Data%20Driven%20Monte%20Carlo%20Simulation/"
+file1 <- "food-sp-14.csv"
+file2 <- "food-fa-14.csv"
+
+food.s14 <- read.csv(paste0(git1, raw1, file1))
+food.f14 <- read.csv(paste0(git1, raw1, file2))
+
+fs <- food.s14$food
+ff <- food.f14$food
+
+fs
+ff
+
+# xbar1 - xbar2
+diff = mean(fs) - mean(ff)
+diff
+
+# null hypothesis the means are equal to each other
+
+# Under the iid model, all data are from the same process. 
+# So pool the data to estimate the process distribution via the bootstrap distribution.
+
+alldata = c(fs,ff)
+n1 = length(fs)
+n2 = length(ff)
+
+## You can approximate the null distribution of the difference by simulating all 
+# data from the same distribution.
+# Null Hypothesis: Mu1 = Mu2 (H0: two samples have the same mean and came from the 
+# same distribution)
+## A good distribution to use is the bootstrap distribution of the combined data.
+
+Nsim = 100000
+
+ntot1 = n1*Nsim
+sim1 = sample(alldata, ntot1, replace = T)
+sim1 = matrix(sim1, nrow = Nsim, ncol = n1, byrow = T)
+head(sim1)
+xbar1.sim = rowMeans(sim1)
+
+ntot2 = n2*Nsim
+sim2 = sample(alldata, ntot2, replace = T)
+sim2 = matrix(sim2, nrow = Nsim, ncol = n2, byrow = T)
+head(sim2)
+xbar2.sim = rowMeans(sim2)
+
+head(cbind(xbar1.sim, xbar2.sim, xbar1.sim - xbar2.sim))
+
+# Now, the null distribution of the difference between averages is estimated
+# using these Nsim differences:
+
+null.diff = xbar1.sim - xbar2.sim
+hist(null.diff, main = "Bootstrap Null Distribution of Differences", freq = F,
+     xlab = "Difference between averages",
+     ylab = "estimated null density")
+
+# The observed difference and its negative are indicated by dashed vertical lines
+abline(v = c(diff, -diff), lty = 2, col = 'blue')
+
+## The two-sided p-value calculation by Monte-Carlo Simulation:
+head(cbind(xbar1.sim, xbar2.sim, null.diff, null.diff >= abs(diff), null.diff <= -abs(diff)))
+
+pval2 = mean(null.diff >= abs(diff)) + mean(null.diff <= -abs(diff))
+pval2
+
+# Compare with t-test
+t.test(fs, ff)
+# t-test is based on normal dist. so it is better to use bootstrapping 
