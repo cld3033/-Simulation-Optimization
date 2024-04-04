@@ -1,5 +1,5 @@
 ---
-title: "Homework 4 Dennington"
+title: "Homework 4"
 author: "Caroline Dennington"
 date: "2024-04-04"
 output: word_document
@@ -9,6 +9,8 @@ output: word_document
 
 ## Part A
 
+recommend an input distribution model for the "FailCount," "RepairTime," and "DriveTime" variables. Also, determine the distributions' parameters (For example, if data is Normal, what is the approximate mean and stdev; or if the data is Uniform, what are the minimum and maximum parameters).
+
 ```{r}
 # load the data
 git <- "https://raw.githubusercontent.com/cld3033/"
@@ -16,9 +18,64 @@ path <- "-Simulation-Optimization/main/M4%3A%20Data%20Driven%20Monte%20Carlo%20S
 file <- "windTurbineData(3).csv"
 turbine <- read.csv(paste0(git, path, file))
 
-failureCount <- turbine$failure.count
-repairTime <- turbine$rapair.time
-driveTime <- turbine$drive.time
+
+######## failure count input analysis ###############
+
+# 1. Determine if the data is discrete or continuous
+turbine$failure.count # data appears to be discrete
+
+# 2. Visualize the data 
+hist(turbine$failure.count, main = "Historical Failure Count") # The distribution has a positive skew and appears to be unimodal
+
+plot(turbine$failure.count, type = "b", main = "Historical Failure Count", 
+     ylab = "Count", xlab = "Year")
+# The data appears to be random in the time series plot
+# The data points are independent of each other 
+
+acf(turbine$failure.count, main = "ACF Plot for Turbine Failures") 
+# lag 5 is out of the confidence band. However, the correlation is still very low.
+# This suggests that the data does not have correlation with itself.
+
+# 3. Hypothesize the distribution
+library(fitdistrplus)
+descdist(turbine$failure.count, discrete = TRUE)
+# Poisson appears to be closest, but normal also is very close.
+
+failFit.pois <- fitdist(turbine$failure.count, "pois")
+summary(failFit.pois)
+gofstat(failFit.pois)
+# Fail to reject the null hypothesis that this is a good dist.
+
+failFit.norm <- fitdist(turbine$failure.count, "norm")
+summary(failFit.norm)
+g <- gofstat(failFit.norm)
+g$chisqpvalue
+# reject the hypothesis that normal distribution is a good fit 
+
+plot(failFit.norm)
+plot(failFit.pois)
+# Poisson distribution will be best for failure Count
+
+######## repair time input analysis ###############
+
+# 1. Determine if the data is discrete or continuous
+turbine$rapair.time # data appears to be continuous
+
+# 2. Visualize the data
+hist(turbine$rapair.time, main = "Historical Repair Time")
+# The data appears to have a normal distribution
+
+plot(turbine$rapair.time, type = "b", main = "Historical Repair Time", 
+     ylab = "Count", xlab = "Year") # There does not appear to be a pattern
+
+acf(turbine$rapair.time, main = "ACF Plot for Repair Time")
+# All lags are within the confidence band. The data is stationary and is uncorrelated
+# with itself.
+
+# 3. Hypothesize the distribution
+descdist(turbine$rapair.time, discrete = TRUE)
+# normal distribution appears to be closest, but I will try Poisson just in case.
+
 
 
 ```
