@@ -1,0 +1,24 @@
+---
+title: "Homework 4 Dennington"
+author: "Caroline Dennington"
+date: "2024-04-04"
+output: word_document
+---
+
+# Problem 1
+
+## Part A
+
+```{r}
+# load the data
+git <- "https://raw.githubusercontent.com/cld3033/"
+path <- "-Simulation-Optimization/main/M4%3A%20Data%20Driven%20Monte%20Carlo%20Simulation/"
+file <- "windTurbineData(3).csv"
+turbine <- read.csv(paste0(git, path, file))
+
+failureCount <- turbine$failure.count
+repairTime <- turbine$rapair.time
+driveTime <- turbine$drive.time
+
+
+```
