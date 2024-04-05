@@ -1,6 +1,13 @@
 ---
 title: "Homework 4"
 author: "Caroline Dennington"
+date: "2024-04-05"
+output: word_document
+---
+
+---
+title: "Homework 4"
+author: "Caroline Dennington"
 date: "2024-04-04"
 output: word_document
 ---
@@ -9,7 +16,10 @@ output: word_document
 
 ## Part A
 
-recommend an input distribution model for the "FailCount," "RepairTime," and "DriveTime" variables. Also, determine the distributions' parameters (For example, if data is Normal, what is the approximate mean and stdev; or if the data is Uniform, what are the minimum and maximum parameters).
+An input analysis is performed for all three variables to determine what input distributions are an appropriate fit. When analyzing Failure Count, the distribution appeared to be discrete and the distribution had a positive skew. The Auto correlation function (ACF) plot shows that the Failure Count data is uncorrelated with itself, as none of the lags are significantly out of the confidence bounds. There is one lag that is out of the confidence bounds, but it's ACF is below 0.2. The descdist() function is then used to visualize the kurtosis and square skewness of the observed distribution compared to various discrete distribution types. This is what is known as a Cullen and Frey graph. This visualization indicates that the observed distribution is most similar to the normal and Poisson distributions. 
+
+When comparing the p-values for probability that the observed distribution is a Poisson or normal distribution, only the Poisson distribution had a p-value that was large enough to reject the null hypothesis (that the observed distribution is of the same type) at the 95% confidence level. The p-value for failure count having a normal distribution is approximately 2.8e-5, whereas the p-value for the data having a Poisson distribution is approximately 0.77. Therefor the Poisson distribution is selected to use for simulating values of Failure Count. The Poisson distribution has a lambda of 2.93 and a standard error of 0.1210372.
+
 
 ```{r}
 # load the data
@@ -56,7 +66,17 @@ plot(failFit.norm)
 plot(failFit.pois)
 # Poisson distribution will be best for failure Count
 
-######## repair time input analysis ###############
+
+```
+
+Input analysis is performed for repair time in the same manor. When observing the data points for the repair time variable, they appear to be continuous. This histogram of the data has a uniform distribution. The time series plot of the data reveals no relationship with repair time and year. The ACF plot also shows all lags to be within the confidence bounds, indicating that the data is IID. 
+
+When view the Cullen and Frey graph the data, it is observed that the distribution of the repair time data has a skewness and kurtosis most similar to the normal and gamma distributions. The hypothesis test is conducted for repair time data having the same distribution is conducted for each distribution. Both hypothesis tests result in a p-value that is too large to reject the null hypothesis that the distribution of repair time and the tested distribution are the same at the 95% confidence level. The p-value for the normal distribution test is approximately 0.09, whereas the p-vlaue for the gamma distribution test is approximately 0.12. The normal distribution has a slightly higher log-likelihood (-365.9681) than the gamma distribution (-366.5354).
+
+Thus the distribution selected for repair time is a normal distribution with a mean of 10.0495 an a standard deviation of 1.508.
+
+```{r}
+################## repair time input analysis #######################################
 
 # 1. Determine if the data is discrete or continuous
 turbine$rapair.time # data appears to be continuous
@@ -73,9 +93,63 @@ acf(turbine$rapair.time, main = "ACF Plot for Repair Time")
 # with itself.
 
 # 3. Hypothesize the distribution
-descdist(turbine$rapair.time, discrete = TRUE)
-# normal distribution appears to be closest, but I will try Poisson just in case.
+descdist(turbine$rapair.time, discrete = FALSE)
+# normal distribution appears to be closest, but I will try gamma just in case.
+
+repairFit.norm <- fitdist(turbine$rapair.time, "norm")
+summary(repairFit.norm)
+g2 <- gofstat(repairFit.norm)
+g2$chisqpvalue
+
+repairFit.gamma <- fitdist(turbine$rapair.time, "gamma")
+summary(repairFit.gamma)
+g3 <- gofstat(repairFit.gamma)
+g3$chisqpvalue
+
+plot(repairFit.norm)
+plot(repairFit.gamma)
+
+repairFit.norm$loglik
+repairFit.gamma$loglik
+# normal distribution has a slightly better log-likelihood.
 
 
+```
+
+Input analysis is conducted for the drive time data. The data appears to be continuous on initial inspection. A histogram is then plotted and reveals a distribution that appears to be uniform with slight variation due to randomness. The ACF plot is a v
+
+```{r}
+################## Drive time input analysis #######################################
+
+# 1. Determine if the data is discrete or continuous
+turbine$drive.time # Data appears to be continuous
+
+# 2. Visualize the data
+hist(turbine$drive.time, main = "Historical Drive Time")
+# The data almost looks like its uniform
+
+plot(turbine$drive.time, type = "b", main = "Historical Drive Time", 
+     ylab = "Count", xlab = "Year") # There does not appear to be a pattern
+
+acf(turbine$drive.time, main = "ACF Plot for Drive Time")
+# All lags are within the confidence band. The data is stationary and is uncorrelated
+# with itself.
+
+# 3. Hypothesize the distribution
+descdist(turbine$drive.time, discrete = FALSE) # appears to be uniform
+
+driveFit.unif <- fitdist(turbine$drive.time, "unif")
+summary(driveFit.unif)
+g4 <- gofstat(driveFit.unif)
+g4$chisqpvalue
+plot(driveFit.unif)
+
+driveFit.norm <- fitdist(turbine$drive.time, "norm")
+summary(driveFit.norm)
+g5 <- gofstat(driveFit.norm)
+g5$chisqpvalue
+plot(driveFit.norm)
+
+# Uniform distribution is the best fit for drive time 
 
 ```
