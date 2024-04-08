@@ -153,3 +153,71 @@ plot(driveFit.norm)
 # Uniform distribution is the best fit for drive time 
 
 ```
+
+# Problem 3 
+
+## Part A  and B
+
+```{r}
+git <- "https://raw.githubusercontent.com/cld3033/"
+path <- "-Simulation-Optimization/main/M4%3A%20Data%20Driven%20Monte%20Carlo%20Simulation/"
+file <- "newsVendorData(1).csv"
+histDemand <- read.csv(paste0(git, path, file))
+hist_D <- histDemand$demand
+
+# deterministic variables
+C = 12 # cost 
+R = 18 # selling price
+S = 10 # salvage price
+
+hist(hist_D, main = "Historical Demand of Newspapers", xlab = "Demand")
+# This helps me select a range of Qs to test. 30-50 seems like a good range. 
+
+# Create net profit function 
+# net profit = min(Q, D)*R + max(0, Q-D)*S - Q*C
+netProfitFun <- function(D, Q, R, S, C){
+  R*min(Q, D) + S*max(0, Q-D) - Q*C
+}
+
+num_sim <- 1000
+Qrange <- 30:50
+set.seed(123)
+
+# Create a function that will generate bootstrap samples the same size as the original data
+boot_sample <- function(x){
+  sim_D = sample(x, replace = TRUE)
+}
+
+# generate the bootstrap samples
+sim_D <- replicate(num_sim, boot_sample(hist_D))
+
+
+j = 0
+new_num_sim <- length(sim_D) # This will allow for a net profit to be calculated 
+# for ever vlaue in sim_D
+profitMatrix <- matrix(0, nrow = new_num_sim, ncol = length(Qrange))
+
+for (Q in Qrange) {
+  j = j+1
+  for (i in 1:new_num_sim) {
+    profitMatrix[i, j] = netProfitFun(sim_D[i], Q, R, S, C)
+  }
+}
+# Expected (average) profit for each Q
+profit_for_each_Q <- colMeans(profitMatrix)
+cbind(Qrange, profit_for_each_Q)
+
+best_Q_index <- which.max(profit_for_each_Q)
+plot(Qrange, colMeans(profitMatrix), ylab = "Expected Profit", xlab = "Q")
+
+# Optimal purchase quantity is 45
+
+# The 95% confidence interval of maximum profit is:
+quantile(profitMatrix[, best_Q_index], c(0.025, 0.975))
+
+hist(profitMatrix[, best_Q_index], main = "Simulated Net Profit when Q = 45", 
+     xlab = "Net Profit")
+abline(v = max(profit_for_each_Q), col = "blue")
+abline(v =  134 , col = "red")
+abline(v =  270 , col = "red")
+```
