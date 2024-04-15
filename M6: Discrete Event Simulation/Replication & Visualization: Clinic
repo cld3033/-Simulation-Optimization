@@ -1,0 +1,54 @@
+# replicate the clinic simulation 30 times 
+# the big difference is that the model is not instantiated in the beginning.
+# the model is instanatiated later in a for loop
+
+library(simmer)
+
+set.seed(123)
+
+# Set up a simple trajectory for a patient 
+# the %>% operator is for chaining between functions. This can be refferred to as piping also.
+patient <- trajectory("patients' path") %>%
+  
+  ## patient seizes one nurse
+  seize("nurse", 1) %>%
+  timeout(function() rnorm(1, 15, 1)) %>% # timeout is when the service is taking place
+  release("nurse", 1) %>%
+  
+  seize("doctor", 1) %>%
+  timeout(function() rnorm(1, 20, 1)) %>%
+  release("doctor", 1) %>%
+  
+  seize("administration", 1) %>%
+  timeout(function() rnorm(1, 5, 1)) %>%
+  release("administration", 1)
+
+# It is easy to replicate a simulation multiple times using the standard lapply R functions,
+# which is like a for-loop
+envs <- lapply(1:30, function(i){
+  simmer("Clinic") %>%
+    add_resource("nurse", 2) %>%
+    add_resource("doctor", 3) %>%
+    add_resource("administration", 2) %>%
+    add_generator("patient", patient, function() rnorm(1, 5, 0.5)) %>%
+    run(540)
+})
+
+# We can look at the result of one replication, e.g. the 5th replication
+envs[[5]]
+
+# Basic visualization tools 
+# Plot of resources 
+
+# Two metrics availabel:
+  # * The utilization of specified resources in the simulation
+  # * Th usage of a resource ovet the simulation time frame
+
+library(simmer.plot)
+resources <- get_mon_resources(envs)
+plot(resources, metric = "utilization")
+
+# visualize the usage
+plot(resources, metric = "usage")
+plot(resources, metric = "usage", c("nurse", "doctor"), items = "server")
+plot(resources, metric = "usage", c("nurse", "doctor"), items = "server")$data
