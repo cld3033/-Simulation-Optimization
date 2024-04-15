@@ -1,0 +1,63 @@
+# We want to simulate a Clinic where a patient is first seen by a
+# nurse for an intake, next by a doctor for the consultation, and
+# finally by administrative staff to check out or schedule a
+# follow-up appointment.
+# • The clinic opens from 8 am to 5 pm (540 minutes)
+# • Nurse service time is normally distributed: Normal(mean
+#                                                      = 15, sd = 1) minutes
+# • Doctor service time is normally distributed: Normal(mean
+#                                                       = 20, sd = 1) minutes
+# • Administrator service time is normally distributed:
+#   Normal(mean = 5, sd = 1) minutes
+# • Patients inter-arrival time is normally distributed:
+#   Normal(mean = 5, sd = 0.5) minutes
+
+# assume we have 2 nurses, 3 doctors, and 2 administrative staff.
+
+library(simmer)
+
+set.seed(123)
+
+# instantiate a new simulation environment
+env <- simmer("Clinic")
+env
+
+# Set up a simple trajectory for a patient 
+# the %>% operator is for chaining between functions. This can be refferred to as piping also.
+patient <- trajectory("patients' path") %>%
+  
+  ## patient seizes one nurse
+  seize("nurse", 1) %>%
+  timeout(function() rnorm(1, 15, 1)) %>% # timeout is when the service is taking place
+  release("nurse", 1) %>%
+  
+  seize("doctor", 1) %>%
+  timeout(function() rnorm(1, 20, 1)) %>%
+  release("doctor", 1) %>%
+  
+  seize("administration", 1) %>%
+  timeout(function() rnorm(1, 5, 1)) %>%
+  release("administration", 1)
+  
+library(simmer.plot)
+plot(patient) # not that informative 
+plot(patient, verbose = T) # much better
+
+# define resource capacities
+env %>%
+  add_resource("nurse", 3) %>%
+  
+  add_resource("doctor",4) %>%
+  
+  add_resource("administration", 2) %>%
+  
+  add_generator("patient", patient, function() rnorm(1, 5, 0.5))
+
+# test run the simulation 
+env %>%
+  run(540) # 540 is the simulation clock. This case its the minutes in the workday
+
+# look under the hood
+head(get_mon_arrivals(env))
+head(get_mon_arrivals(env, per_resource = T))
+head(get_mon_resources(env))
