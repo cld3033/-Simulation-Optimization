@@ -1,0 +1,110 @@
+## Several counters but a single Queue
+
+# Here we model a bank whose customers arrive randomly and are to be served at a 
+# goroup of counters, taking a random time for service, where we assume that waiting customers
+# for a single first-in firs-out queue. 
+
+# Here is the model information:
+# * There are 3 counters and system has only a single queue
+# * The customer arrivals are following exponential distribution with a mean of 4 minutes
+# * The service time at every counter takes 10 to 15 minutes (uniformly dist.)
+# We run thsi model for 6 hrs (360 minutes), with 200 replications 
+
+library(simmer)
+
+set.seed(123)
+
+customer <-
+  trajectory("Customer's path") %>%
+  
+  seize("counter", 1) %>%
+  timeout(function() runif(1, 10, 15)) %>%
+  release("counter", 1)
+
+library(simmer.plot)
+# very simple structure:
+plot(customer, verbose = T)
+
+set.seed(123)
+envs <- lapply(1:200, function(i) {
+  simmer("Bank") %>%
+    add_resource("counter", 3) %>%
+    add_generator("customer", customer, function() rexp(1, 1/4)) %>% # the lamda indicates 1 customer per 4 minutes
+    run(360)
+})
+
+resources  <- get_mon_resources(envs)
+plot(resources, metric = "utilization")
+plot(resources, metric = "usage")
+
+# find a 95% confidence interval for average waiting time 
+arrivals <- get_mon_arrivals(envs)
+plot(arrivals, metric = "waiting_time")
+
+# Average waiting time
+waitingTime <- (arrivals$end_time - arrivals$start_time) - arrivals$activity_time
+mean(waitingTime)
+
+# Find 95% confidence interval
+arrivals2 <- cbind(arrivals, waitingTime)
+# get mean wait time for each replication
+xbar <- aggregate(arrivals2$waitingTime, by = list(arrivals2$replication), FUN=mean)
+# gives 95% confidence interval for average wait time 
+quantile(xbar$x, c(0.025, 0.975))
+
+
+# Several counters with individual queues 
+
+# Each counter is now assumed to have its own queue. In this case, customers should decide
+# which line to join. In practice, customers usually join the shortest queue. We implement
+# this behavior by first selecting the shortest line using the select() function in R Simmer.
+# We use seize_selected() to enter the chosen line and later release_selected().
+# The rest of the program is the same as before.
+
+# Our goal is to compare the system's waiting time when using a single queue versus 
+# individual queues.
+# 
+# Here is the model information:
+# • There are three counters, and each counter has its own queue.
+# • The customer arrivals follow an exponential distribution with a mean of 4 minutes.
+# • The service time at every counter takes 10 to 15 minutes (uniformly distributed).
+# • This system operates for 6 hrs (360 minutes) per day.
+
+library(simmer)
+
+set.seed(123)
+
+customer <-
+  trajectory("Customer's path") %>%
+  
+  select(c("counter1", "counter2", "counter3"), policy = "shortest-queue")  %>%
+  seize_selected()  %>%
+  timeout(function() runif(1, 10, 15))  %>%
+  release_selected()
+
+library(simmer.plot)
+# very simple structure 
+plot(customer, verbose = T)
+
+set.seed(123)
+envs2 <- lapply(1:200, function(i) {
+  simmer("Bank") %>%
+    add_resource("counter1", 1) %>%
+    add_resource("counter2", 1) %>%
+    add_resource("counter3", 1) %>%
+    add_generator("customer", customer, function() rexp(1, 1/4)) %>% # the lamda indicates 1 customer per 4 minutes
+    run(360)
+})
+
+resources  <- get_mon_resources(envs2)
+plot(resources, metric = "utilization")
+plot(resources, metric = "usage")
+
+# visuali
+
+arrivals <- get_mon_arrivals(envs2)
+plot(arrivals, metric = "waiting_time")
+
+waitingTime = (arrivals$end_time - arrivals$start_time) - arrivals$activity_time
+mean(waitingTime) # Interpreted in the video.
+# timestamp 11:52
