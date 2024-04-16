@@ -1,0 +1,104 @@
+# replicate the clinic simulation 30 times 
+# the big difference is that the model is not instantiated in the beginning.
+# the model is instanatiated later in a for loop
+
+library(simmer)
+
+set.seed(123)
+
+# Set up a simple trajectory for a patient 
+# the %>% operator is for chaining between functions. This can be refferred to as piping also.
+patient <- trajectory("patients' path") %>%
+  
+  # Create 2 branches, one for low priority and high priority with 50% chance of being 
+  # either priotity. 
+  branch(function() sample(1:2, size=1, replace=TRUE, prob=c(0.5, 0.5)), continue=c(T,T),
+         
+         ############# Sub trajectory A ####################################
+         trajectory("A") %>%
+           set_prioritization(values = c(5,7,T)) %>% # first number in values vector sets the 
+           # priority. 2nd number is arbitrary and just has to match in both sub traj.
+           # the 2nd number is what is called a preemptable and it always needs to be larger 
+          # than the first number.
+           # t is for restarting to make the instances independent of each other
+           
+           seize("nurse", 1) %>%
+           timeout(function() rnorm(1, 15, 1)) %>% # timeout is when the service is taking place
+           release("nurse", 1) %>%
+           
+           seize("doctor", 1) %>%
+           timeout(function() rnorm(1, 20, 1)) %>%
+           release("doctor", 1) %>%
+           
+           seize("administration", 1) %>%
+           timeout(function() rnorm(1, 5, 1)) %>%
+           release("administration", 1) %>%
+         
+          set_attribute("Priority", 1),
+         
+           
+         ############# Sub trajectory B ####################################
+         trajectory("B") %>%
+           set_prioritization(values = c(3,7,T)) %>%
+           
+           seize("nurse", 1) %>%
+           timeout(function() rnorm(1, 15, 1)) %>% # timeout is when the service is taking place
+           release("nurse", 1) %>%
+           
+           seize("doctor", 1) %>%
+           timeout(function() rnorm(1, 20, 1)) %>%
+           release("doctor", 1) %>%
+           
+           seize("administration", 1) %>%
+           timeout(function() rnorm(1, 5, 1)) %>%
+           release("administration", 1) %>%
+           
+           # attaches a label of priority to each patient
+           set_attribute("Priority", 2)
+  )
+         
+# show model
+library(simmer.plot)
+plot(patient, verbose = T)
+
+# It is easy to replicate a simulation multiple times using the standard lapply R functions,
+# which is like a for-loop
+set.seed(123)
+envs <- lapply(1:10, function(i){
+  simmer("Clinic") %>%
+    add_resource("nurse", 3) %>%
+    add_resource("doctor", 4) %>%
+    add_resource("administration", 1) %>%
+    add_generator("patient", patient, function() rnorm(1, 5, 0.5), mon = 2) %>%
+    # adding mon = 2 allows us to record/monitor the attribute (in this case priority) of 
+    # the patient
+    run(540)
+})
+
+patientAttr <- get_mon_attributes(envs)
+
+table(patientAttr$value) # shows how many of each priority in all replications got through the system
+table(patientAttr$replication, patientAttr$value) # shows the same thing but broken down by each replication
+
+x1 <- get_mon_arrivals(envs) # these contain different information for patients
+x2 <- get_mon_attributes(envs)
+
+all <- merge(x1, x2, by=c("name", "replication"), all = T) # merges the data together based on common cols
+
+priori1 <- na.omit(subset(all, all$value == 1))
+priori2 <- na.omit(subset(all, all$value == 2))
+
+priori1.waiting = (priori1$end_time-priori1$start_time) - priori1$activity_time
+priori2.waiting = (priori2$end_time-priori2$start_time) - priori2$activity_time
+
+# Average wait time per priority group
+mean(priori1.waiting)
+mean(priori2.waiting)
+
+# histogram of wait time per priority group
+hist(priori1.waiting)
+hist(priori2.waiting)
+
+boxplot(priori1.waiting)
+boxplot(priori2.waiting)
+
