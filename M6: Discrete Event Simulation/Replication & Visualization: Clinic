@@ -1,3 +1,4 @@
+
 # replicate the clinic simulation 30 times 
 # the big difference is that the model is not instantiated in the beginning.
 # the model is instanatiated later in a for loop
@@ -41,8 +42,8 @@ envs[[5]]
 # Plot of resources 
 
 # Two metrics availabel:
-  # * The utilization of specified resources in the simulation
-  # * Th usage of a resource ovet the simulation time frame
+# * The utilization of specified resources in the simulation
+# * Th usage of a resource ovet the simulation time frame
 
 library(simmer.plot)
 resources <- get_mon_resources(envs)
@@ -52,3 +53,27 @@ plot(resources, metric = "utilization")
 plot(resources, metric = "usage")
 plot(resources, metric = "usage", c("nurse", "doctor"), items = "server")
 plot(resources, metric = "usage", c("nurse", "doctor"), items = "server")$data
+
+plot(get_mon_resources(envs[[6]]), metric = "usage", "doctor", items = "server", steps =  TRUE)
+# the plot shows that the majority of the time 3-4 doctors are being utilized
+
+# Plot of arrivals 
+# Three metrics available:
+# * activity time
+# * waiting time 
+# * flow time
+
+arrivals <- get_mon_arrivals(envs)
+plot(arrivals, metric = "activity_time")
+plot(arrivals, metric = "waiting_time")
+plot(arrivals, metric = "flow_time")
+# activity_time is the time an entity spends with resources
+# waiting_time is the time an entity spends in queues
+# flow_time is the total time that the enetity spends in the system (EndTime - StaartTime)
+
+library(gridExtra)
+p1 = plot(resources, metric = "utilization")
+p2 = plot(resources, metric = "usage")
+p3 = plot(arrivals, metric = "activity_time")
+p4 = plot(arrivals, metric = "waiting_time")
+grid.arrange(p1,p2,p3,p4)
