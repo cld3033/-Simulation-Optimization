@@ -1,3 +1,4 @@
+
 ## Several counters but a single Queue
 
 # Here we model a bank whose customers arrive randomly and are to be served at a 
@@ -100,11 +101,73 @@ resources  <- get_mon_resources(envs2)
 plot(resources, metric = "utilization")
 plot(resources, metric = "usage")
 
-# visuali
+# visualize the waiting time of customers
+# What is the average wait time of customers?
+# find a 95% confidence interval for the waiting time?
+# compart the waiting time of the system when we use a single queue vs using 
+# individual queues
 
 arrivals <- get_mon_arrivals(envs2)
 plot(arrivals, metric = "waiting_time")
 
 waitingTime = (arrivals$end_time - arrivals$start_time) - arrivals$activity_time
 mean(waitingTime) # Interpreted in the video.
-# timestamp 11:52
+
+arrivals2 <- cbind(arrivals, waitingTime)
+xbar2 <- aggregate(arrivals2$waitingTime, by = list(arrivals2$replication), FUN=mean)
+quantile(xbar2$x, c(0.025, 0.975))
+
+boxplot(xbar$x, xbar2$x, names = c("single.queue", "multiple.queue"))
+# the difference between them is not significant 
+# but in real life, the system with the single queue is more efficient than multiple queue
+
+# Random selection
+
+library(simmer)
+
+set.seed(123)
+
+customer <-
+  trajectory("Customer's path") %>%
+  
+  select(c("counter1", "counter2", "counter3"), policy = "random")  %>%
+  seize_selected()  %>%
+  timeout(function() runif(1, 10, 15))  %>%
+  release_selected()
+
+library(simmer.plot)
+# very simple structure 
+plot(customer, verbose = T)
+
+set.seed(123)
+envs2 <- lapply(1:200, function(i) {
+  simmer("Bank") %>%
+    add_resource("counter1", 1) %>%
+    add_resource("counter2", 1) %>%
+    add_resource("counter3", 1) %>%
+    add_generator("customer", customer, function() rexp(1, 1/4)) %>% # the lamda indicates 1 customer per 4 minutes
+    run(360)
+})
+
+resources  <- get_mon_resources(envs2)
+plot(resources, metric = "utilization")
+plot(resources, metric = "usage")
+
+# visualize the waiting time of customers
+# What is the average wait time of customers?
+# find a 95% confidence interval for the waiting time?
+# compart the waiting time of the system when we use a single queue vs using 
+# individual queues
+
+arrivals <- get_mon_arrivals(envs2)
+plot(arrivals, metric = "waiting_time")
+
+waitingTime = (arrivals$end_time - arrivals$start_time) - arrivals$activity_time
+mean(waitingTime) # Interpreted in the video.
+
+arrivals2 <- cbind(arrivals, waitingTime)
+xbar2 <- aggregate(arrivals2$waitingTime, by = list(arrivals2$replication), FUN=mean)
+quantile(xbar2$x, c(0.025, 0.975))
+
+boxplot(xbar$x, xbar2$x, names = c("single.queue", "multiple.queue"))
+# single queue is much more efficient
