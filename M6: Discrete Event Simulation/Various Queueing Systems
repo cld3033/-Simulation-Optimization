@@ -53,6 +53,7 @@ xbar <- aggregate(arrivals2$waitingTime, by = list(arrivals2$replication), FUN=m
 # gives 95% confidence interval for average wait time 
 quantile(xbar$x, c(0.025, 0.975))
 
+######################################################################################################
 
 # Several counters with individual queues 
 
@@ -121,6 +122,8 @@ boxplot(xbar$x, xbar2$x, names = c("single.queue", "multiple.queue"))
 # the difference between them is not significant 
 # but in real life, the system with the single queue is more efficient than multiple queue
 
+######################################################################################################
+
 # Random selection
 
 library(simmer)
@@ -171,3 +174,64 @@ quantile(xbar2$x, c(0.025, 0.975))
 
 boxplot(xbar$x, xbar2$x, names = c("single.queue", "multiple.queue"))
 # single queue is much more efficient
+
+######################################################################################################
+
+# Several counters with individual queues, each counter with different service time
+# 
+# Here is the model information:
+#   • There are two counters, and each counter has its own queue. Customers select
+#       queues randomly.
+#   • The customer arrivals are following an exponential distribution with a mean of 4
+#       minutes.
+#   • The service time at every counter is different:
+#       – Counter 1: Uniform(10, 15)
+#       – Counter 2: Normal(mean = 10, sd = 1)
+
+# We run this model for 6 hrs (360 minutes) for 200 replications.
+
+# Our goal is to compute:
+#   • The average queue size per counter.
+#   • The average waiting time of customers per counter.
+
+library(simmer)
+customer <- 
+  trajectory("Customer's path") %>%
+  
+  branch(option = function() sample(1:2, 1, replace=T), continue = c(T,T),
+         
+         trajectory("A") %>%
+           seize("counter1", 1) %>%
+           timeout(function() runif(1, 10, 15)) %>%
+           release("counter1", 1),
+         
+         trajectory("B") %>%
+           seize("counter2", 1) %>%
+           timeout(function() rnorm(1, 10, 1)) %>%
+           release("counter2", 1)
+         )
+
+library(simmer.plot)
+plot(customer, verbose = T)
+
+set.seed(123)
+envs <- lapply(1:200, function(i) {
+  simmer("Bank") %>%
+    add_resource("counter1", 1) %>%
+    add_resource("counter2", 1) %>%
+    add_generator("customer", customer, function() rexp(1, 1/4)) %>%
+    run(360)
+})
+
+# The overall average of the queue size 
+resources <- get_mon_resources(envs)
+mean(resources$queue)
+
+# The average queue size per counter
+aggregate(resources$queue, by = list(resources$resource), FUN=mean)
+
+# The overall average waiting time 
+arrivals <- get_mon_arrivals(envs, per_resource = T)
+waitingTime <- (arrivals$end_time - arrivals$start_time) - arrivals$activity_time
+arrivals2 <- cbind(arrivals, waitingTime)
+aggregate(arrivals2$waitingTime, by = list(arrivals2$resource), FUN=mean)
