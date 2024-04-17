@@ -1,0 +1,79 @@
+# DES Operator and Machine Interactions
+# 
+# Consider a manufacturing system comprising two different machines and one operator.
+    # • The operator is assigned to run both machines.
+    # • Parts arrive with an exponentially distributed inter-arrival time with 
+      # a mean of 4 minutes. The arriving parts are one of two types.
+        # – 50% of the arriving parts are Type 1 and are processed on Machine 1.
+          # These parts require the assigned operator for a 2-minute setup operation.
+        # – The remaining 50% of the parts are Type 2 and are processed on Machine
+          # 2. These parts require the assigned operator for a 3-minute setup 
+            # operation.
+# • The service times (excluding the setup time) are normally distributed with a
+# mean of 2.5 minutes and a standard deviation of 0.5 minutes for Type 1 parts, a
+# mean of 4.5 minutes, and a standard deviation of 0.5 minutes for Type 2 parts.
+
+# Run your model for 800 minutes, with 50 replications. Report the average total time spent
+# in the system (flow time) for each type of part.
+
+library(simmer)
+set.seed(123)
+part <- trajectory("parts' path") %>%
+  
+  branch(option = function() sample(1:2, 1, prob = c(0.5, 0.5), replace=T), continue = c(T,T),
+         
+         trajectory("A") %>%
+           set_attribute("type", 1)  %>% # allows for parts to be desitnguished 
+           seize("machine1", 1) %>%
+           seize("operator", 1) %>%
+           timeout(2) %>%
+           release("operator", 1) %>%
+           timeout(function() rnorm(1, 2.5, 0.5)) %>%
+           release("machine1", 1),
+         
+         trajectory("B") %>%
+           set_attribute("type", 2)  %>%
+           seize("machine2", 1) %>%
+           seize("operator", 1) %>%
+           timeout(3) %>%
+           release("operator", 1) %>%
+           timeout(function() rnorm(1, 4.5, 0.5)) %>%
+           release("machine2", 1) 
+         )
+
+library(simmer.plot)
+plot(part, verbose = T)
+
+envs <- lapply(1:50, function(i) {
+  simmer("Man") %>%
+    add_resource("operator", 1) %>%
+    add_resource("machine1", 1) %>%
+    add_resource("machine2", 1) %>%
+    add_generator("part", part, function() rexp(1, 1/4), mon = 2) %>% 
+    # setting monitoring = 2 allows for monitoring of arrival and attribute for each entity
+    run(800)
+})
+
+res = get_mon_resources(envs)
+
+plot(res, metric = "utilization")
+
+arrivals <- get_mon_arrivals(envs, per_resource = T)
+flowTime <- (arrivals$end_time - arrivals$start_time)
+arrivals2 <- cbind(arrivals, flowTime)
+aggregate(arrivals2$flowTime, by = list(arrivals2$resource), FUN=mean)
+
+x1 <- get_mon_arrivals(envs)
+x2 <- get_mon_attributes(envs)
+
+all <- merge(x1, x2, by = c("name", "replication"), all = T)
+head(all)
+
+TypeA <- (subset(all, all$value == 1))
+TypeB <- (subset(all, all$value == 2))
+
+typeA.flowTime <- (TypeA$end_time - TypeA$start_time)
+typeB.flowTime <- (TypeB$end_time - TypeB$start_time)
+# Average
+mean(typeA.flowTime, na.rm = T)
+mean(typeB.flowTime, na.rm = T)
