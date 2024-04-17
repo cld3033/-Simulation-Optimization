@@ -1,0 +1,68 @@
+# a system with 2 types of service: 
+
+# Suppose we have two different types of customers. Customers type 1 get 
+# service from counter 1, then leave. Customers type 2 get service from 
+# counters 2 and 3 sequentially.
+# Here are the key parameters of the system.
+
+# • 80% of customers are type 1, and 20% are type 2.
+# • The arrival rate is Poisson with 𝜆 = 12 per hour. Therefore, the time 
+    # between arrival is exponential with a mean of 5 minutes 
+    # (this comes from converting to 1hr/12 people, then converting to minutes)
+    # 60min/12 people = 5 
+# • Service Time on counter 1 is Normal(mean = 15, sd = 2)
+# • Service Time on counter 2 is Normal(mean = 30, sd = 3)
+# • Service Time on counter 3 is Normal(mean = 5, sd = 0.5)
+# • We have two staff for counter1 and they can serve two customers at the 
+    # same time.
+# • We have one staff for counter2 and one staff for counter3.
+# Run this model for 6 hours in 30 replications  
+
+library(simmer)
+library(simmer.plot)
+set.seed(123)
+
+customer <- trajectory() %>%
+  branch(option = function() sample(1:2, 1, prob = c(0.8, 0.2), replace=T), continue = c(T, T),
+         
+         trajectory("Service A") %>%
+           seize("counter1", 1) %>%
+           timeout(function() rnorm(1, 15, 2)) %>%
+           release("counter1", 1),
+         
+         trajectory("Service B") %>%
+           seize("counter2", 1) %>%
+           timeout(function() rnorm(1, 30, 3)) %>%
+           release("counter2", 1) %>%
+           seize("counter3", 1) %>%
+           timeout(function() rnorm(1, 5, 0.5)) %>%
+           release("counter3", 1)
+  )
+
+# plot the system
+plot(customer, verbose = T)
+
+set.seed(123)
+envs <- lapply(1:30, function(i){
+  simmer("DMV") %>%
+    add_resource("counter1", 3) %>%
+    add_resource("counter2", 1) %>%
+    add_resource("counter3", 1) %>%
+    add_generator("Customer", customer, function() rexp(1, 1/5)) %>%
+    run(360)
+})
+
+resource <- get_mon_resources(envs)
+
+mean(resource$queue)
+
+# check resource utilization
+plot(resource, metric = "utilization")
+plot(resource, metric = "usage")
+
+# Analyze wait time
+arrivals <- get_mon_arrivals(envs, per_resource = T)
+waitingTime <- (arrivals$end_time - arrivals$start_time) - arrivals$activity_time
+arrivals2 <- cbind(arrivals, waitingTime)
+aggregate(arrivals2$waitingTime, by = list(arrivals2$resource), FUN=mean)
+# there is no wait time at counter 3 and counter 1 has the longest wait time 
