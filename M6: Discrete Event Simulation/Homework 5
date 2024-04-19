@@ -5,20 +5,11 @@ date: "2024-04-18"
 output: word_document
 ---
 ## Problem 1 
-# Part A 
 
-The time between incoming phone calls to customer service is Exponential with a mean of 14
-minutes. Each call typically takes min=5, max=20, and most likely = 10 minutes, (Triangularly
-distributed). Simulate the system based on the following scenarios (run each scenario for 6
-hours, with 50 replications).
-a) There are two operators, and the system has only a single queue. Report the histogram
-and mean for the average waiting time1
-.
-b) There are two operators, and each operator has its own queue. Phone calls will be
-directed to the random queue (policy = “random”). Report the histogram and mean for
-the average waiting time.
-c) Compare the average waiting time of parts a and b. Is there any meaningful difference?
-Explain. 
+# Part A 
+A discrete event simulation model is created using to simulate a customer service call center with one queue and two operators. The distributions provided for customer arrival and service time were used in the model creation. The simulation is replicated 50 times. 
+
+The mean wait time for a customer in this system is approximately 1.126 minutes. The histogram of the customer wait times shows that the majority of the customers have less than a 10 minute wait. The 95% confidence interval has lower bound of 0 and an upper bound of approximately 10.5 minutes.
 
 ```{r}
 # load necessary packages
@@ -29,7 +20,7 @@ library(triangle)
 # Set the seed
 set.seed(123)
 
-# Create discret event simulation with 2 operators and a single queue.
+# Create discrete event simulation with 2 operators and a single queue.
 envs <- lapply(1:50, function(i) {
 env <- simmer("Customer Service")
 
@@ -55,5 +46,17 @@ x1 <- get_mon_arrivals(envs)
 waitTime <- (x1$end_time - x1$start_time) - x1$activity_time
 
 mean(waitTime, na.rm = T)
+quantile(waitTime, c(0.025, 0.975))
+
 hist(waitTime, main = "Customer Wait Time", xlab = "Time (Min.)")
+abline(v = 1.126063, col = "blue")
+abline(v = -2.131628e-14, col = "red")
+abline(v = 1.052215e+01, col = "red")
+legend("topright", c("Mean", "95% Confidence Bounds"),col=c("blue", "red"), lty = 1:2, cex=0.5)
 ```
+
+b) There are two operators, and each operator has its own queue. Phone calls will be
+directed to the random queue (policy = “random”). Report the histogram and mean for
+the average waiting time.
+c) Compare the average waiting time of parts a and b. Is there any meaningful difference?
+Explain.
