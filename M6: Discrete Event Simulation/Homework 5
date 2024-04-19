@@ -114,3 +114,93 @@ legend("topright", c("Mean", "95% Confidence Bounds"),col=c("blue", "red"), lty 
 ## Part C 
 
 The mean customer wait time from the system with separate queues (approximately 4.11 minutes) is still within the 95% confidence bounds of the distribution of wait times from the system with only one queue (0, and approximately 10.5). However, the distribution for the system with 2 queues has a much larger 95% confidence interval and maximum wait time. This suggests that the system with 2 queues is significantly less efficient than the system with one queue.
+
+# Problem 2 
+
+## Part A
+
+The system from problem 1 is modified to have 3 operators with separate queues with new specified service time probability distributions. After 50 replications a resource utilization plot constructed. This plot shows that the operators are reasonably utilized with operator 3 having a higher utilization. This is likely due to operator 3 having a longer service time, making them less efficient at turning over their customer calls. This indicates that they are on a customer service calls for a larger portion of the operational time, which is to be expected.
+
+```{r}
+library(simmer)
+library(simmer.plot)
+library(triangle)
+
+# Set the seed
+set.seed(123)
+
+# Create discrete event simulation with 2 operators and a single queue.
+envs <- lapply(1:50, function(i) {
+env <- simmer("Customer Service")
+
+# Setup trajectory of customer
+customer <- trajectory("customer's path") %>% 
+  
+  branch(option = function() sample(1:3, 1, replace=T), continue = c(T,T,T),
+         
+         trajectory("A") %>% 
+           seize("operator1", 1) %>% 
+           timeout(function() runif(1, 5, 20)) %>% 
+           release("operator1", 1),
+         
+         trajectory("B") %>% 
+           seize("operator2", 1) %>% 
+           timeout(function() runif(1, 5, 20)) %>% 
+           release("operator2", 1),
+         
+         trajectory("C") %>% 
+           seize("operator3", 1) %>% 
+           timeout(function() rnorm(1, 15, 3)) %>% 
+           release("operator3", 1)
+         
+         )
+
+env %>% 
+  add_resource("operator1", 1) %>% 
+  add_resource("operator2", 1) %>% 
+  add_resource("operator3", 1) %>%
+  add_generator("customer", customer, function() rexp(1, 1/5), mon = 2)
+
+env %>% 
+  run(360)
+})
+
+resources <- get_mon_resources(envs)
+plot(resources, metric = "utilization")
+```
+
+## Part B
+
+The mean customer wait time for operators 1 and 2 are approximately 15.9 and 18.48 minutes respectively. Both of these means are reasonably close to each other, but differ slightly. Even though the service time probability distributions are the same for these operators, it is expected for there to be some difference due to the randomness of customer queue selection. Operator 3 has a mean wait time of approximately 24.76 minutes. This is impacted by the longer time it takes operator 3 to turn over customers.
+
+```{r}
+arrivals <- get_mon_arrivals(envs, per_resource = T)
+waitingTime <- (arrivals$end_time - arrivals$start_time) - arrivals$activity_time
+arrivals2 <- cbind(arrivals, waitingTime)
+
+# Display mean wait time for each resource
+aggregate(arrivals2$waitingTime, by = list(arrivals2$resource), FUN=mean)
+```
+
+## Part C
+
+The 95% confidence interval for the wait time of customers serviced by operator 1 has lower bound of approximately 0 and an upper bound of approximately 63.28 minutes.
+
+The 95% confidence interval for the wait time of customers serviced by operator 2 has lower bound of 0 and an upper bound of approximately 74.3 minutes.
+
+The 95% confidence interval for the wait time of customers serviced by operator 3 has lower bound of approximately 0 and an upper bound of approximately 77.33 minutes.
+
+```{r}
+op1 <- (subset(arrivals2, arrivals2$resource == "operator1"))
+op2 <- (subset(arrivals2, arrivals2$resource == "operator2"))
+op3 <- (subset(arrivals2, arrivals2$resource == "operator3"))
+
+# 95% confidence interval for operator 1
+quantile(op1$waitingTime, c(0.025, 0.975))
+
+# 95% confidence interval for operator 2
+quantile(op2$waitingTime, c(0.025, 0.975))
+
+# 95% confidence interval for operator 3
+quantile(op3$waitingTime, c(0.025, 0.975))
+```
