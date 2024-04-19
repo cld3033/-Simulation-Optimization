@@ -1,0 +1,59 @@
+---
+title: "Homework 5"
+author: "Caroline Dennington"
+date: "2024-04-18"
+output: word_document
+---
+## Problem 1 
+# Part A 
+
+The time between incoming phone calls to customer service is Exponential with a mean of 14
+minutes. Each call typically takes min=5, max=20, and most likely = 10 minutes, (Triangularly
+distributed). Simulate the system based on the following scenarios (run each scenario for 6
+hours, with 50 replications).
+a) There are two operators, and the system has only a single queue. Report the histogram
+and mean for the average waiting time1
+.
+b) There are two operators, and each operator has its own queue. Phone calls will be
+directed to the random queue (policy = “random”). Report the histogram and mean for
+the average waiting time.
+c) Compare the average waiting time of parts a and b. Is there any meaningful difference?
+Explain. 
+
+```{r}
+# load necessary packages
+library(simmer)
+library(simmer.plot)
+library(triangle)
+
+# Set the seed
+set.seed(123)
+
+# Create discret event simulation with 2 operators and a single queue.
+envs <- lapply(1:50, function(i) {
+env <- simmer("Customer Service")
+
+# Setup trajectory of customer
+customer <- trajectory("customer's path") %>% 
+  seize("operator", 1) %>% 
+  timeout(function() rtriangle(1, a = 5, b = 20, c = 10)) %>% 
+  release("operator", 1)
+
+env %>% 
+  add_resource("operator", 2) %>% 
+  add_generator("customer", customer, function() rexp(1, 1/14), mon = 2)
+
+env %>% 
+  run(360)
+})
+
+# Plot the customer's path
+plot(customer, verbose = T)
+
+x1 <- get_mon_arrivals(envs)
+
+waitTime <- (x1$end_time - x1$start_time) - x1$activity_time
+
+mean(waitTime, na.rm = T)
+hist(waitTime, main = "Customer Wait Time", xlab = "Time (Min.)")
+```
