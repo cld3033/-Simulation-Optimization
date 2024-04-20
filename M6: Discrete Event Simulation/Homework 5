@@ -1,7 +1,7 @@
 ---
 title: "Homework 5"
 author: "Caroline Dennington"
-date: "2024-04-19"
+date: "2024-04-20"
 output: word_document
 ---
 
@@ -203,4 +203,69 @@ quantile(op2$waitingTime, c(0.025, 0.975))
 
 # 95% confidence interval for operator 3
 quantile(op3$waitingTime, c(0.025, 0.975))
+```
+
+# Problem 3
+
+## Part A
+
+```{r}
+# Load necessary packages 
+library(simmer)
+library(simmer.plot)
+library(truncnorm)
+
+# set the seed
+set.seed(123)
+
+# Create a discrete event simulation with two machines that process two types
+# of parts, with each machine having its own operator 
+
+envs <- lapply(1:50, function(i) {
+  env <- simmer("Man")
+  
+  # set up part trajectory 
+  part <- trajectory("part's path") %>% 
+    
+  branch(option = function() sample(1:2, 1, prob = c(0.6, 0.4), replace = T), continue = c(T,T),
+         
+         trajectory("A") %>% 
+           set_attribute("type", 1) %>% 
+           seize("machine1", 1) %>% 
+           seize("operator1", 1) %>% 
+           timeout(1.5) %>% 
+           release("operator1", 1) %>% 
+           timeout(function() rnorm(1, 4.5, 1)) %>% 
+           release("machine1", 1),
+         
+         trajectory("B") %>% 
+           set_attribute("type", 2) %>% 
+           seize("machine2", 1) %>% 
+           seize("operator2", 1) %>% 
+           timeout(1.5) %>% 
+           release("operator2", 1) %>% 
+           timeout(function() rnorm(1, 7.5, 1.5)) %>% 
+           release("machine2", 1)
+           
+         )
+  
+  env %>% 
+    add_resource("operator1", 1) %>% 
+    add_resource("operator2", 1) %>% 
+    add_resource("machine1", 1) %>% 
+    add_resource("machine2", 1) %>% 
+    add_generator("part", part, function() rtruncnorm(1, a = 0.5, mean = 4, sd = 2))
+  
+  env %>% 
+    run(2000)
+})
+
+# plot the utilization
+
+# plot the usage
+
+# plot the flow time 
+
+# plot the waiting time 
+
 ```
