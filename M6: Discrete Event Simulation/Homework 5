@@ -330,3 +330,73 @@ abline(v = type2.confW[2], col = "red")
 The average flow time a part that is type 1 (part A) is approximately 14.45 minutes. The 95% confidence interval has a lower bound of approximately 4.77 minutes and an upper bound of approximately 41.49 minutes.
 
 The average flow time a part that is type 2 (part B) is approximately 25.86 minutes. The 95% confidence interval has a lower bound of approximately 7.27 minutes and an upper bound of approximately 83.43 minutes.
+
+# Problem 4
+
+## Part A
+
+A discrete event simulation is created using the specifications for problem 4. After the DES is replicated 50 times, the mean flow times for each patient type is displayed. The mean flow time for a low priority patient is 45.844 minutes. The mean flow time for a high priority patient is approximately 70.197 minutes. 
+
+```{r}
+library(simmer)
+library(simmer.plot)
+library(triangle)
+set.seed(123)
+
+envs <- lapply(1:50, function(i) {
+  env <- simmer("Clinic") %>% 
+    add_resource("nurse", 1) %>% 
+    add_resource("doctor", 3)
+  
+  patient <- trajectory("patient's path") %>% 
+    
+    # Balk policy: leave if queue in nurse and doctor > 10 
+    leave(prob = function() ifelse((get_queue_count(env, "nurse") + get_queue_count(env, "doctor"))>10,1,0)) %>% 
+    seize("nurse", 1) %>% 
+    timeout(function() rtriangle(1, a = 3, b = 10, c = 5)) %>% 
+    release("nurse", 1) %>% 
+    
+    branch(function() sample(1:2, size=1, replace=TRUE, prob=c(0.25, 0.75)), continue = c(T,T),
+          trajectory("High Priority") %>% 
+            set_attribute("priority", 2) %>% 
+            set_prioritization(c(2, 7, T)) %>% 
+            
+            seize("doctor", 1) %>% 
+            timeout(function() rnorm(1, 40, 5)) %>% 
+            release("doctor", 1),
+          
+          trajectory("Low Priority") %>% 
+            set_attribute("priority", 1) %>% 
+            set_prioritization(c(1, 7, T)) %>% 
+            
+            renege_in(function() runif(1, 15, 25), out = trajectory()) %>% 
+            seize("doctor", 1) %>% 
+            renege_abort() %>% 
+            timeout(function() rgamma(1, shape = 15, rate = 1)) %>% 
+            release("doctor", 1)
+            )
+  env %>% 
+    add_generator("patient", patient, function() rexp(1, 1/6), mon = 2)
+  
+  env %>% 
+    run(480)
+})
+
+# Get average flow time for each type of patient 
+x1 <- get_mon_arrivals(envs)
+x2 <- get_mon_attributes(envs)
+
+all <- merge(x1, x2, by=c("name", "replication"), all = T)
+
+type1 <- subset(all, all$value == 1)
+type2 <- subset(all, all$value == 2)
+
+type1.flowTime <- (type1$end_time - type1$start_time)
+type2.flowTime <- (type2$end_time - type2$start_time)
+
+# Average flow time for low priority patients 
+mean(type1.flowTime, na.rm = T)
+
+# Average flow time for high priority patients 
+mean(type2.flowTime, na.rm = T)
+```
