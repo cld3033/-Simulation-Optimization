@@ -254,18 +254,64 @@ envs <- lapply(1:50, function(i) {
     add_resource("operator2", 1) %>% 
     add_resource("machine1", 1) %>% 
     add_resource("machine2", 1) %>% 
-    add_generator("part", part, function() rtruncnorm(1, a = 0.5, mean = 4, sd = 2))
+    add_generator("part", part, function() rtruncnorm(1, a = 0.5, mean = 4, sd = 2), mon = 2)
   
   env %>% 
     run(2000)
 })
 
 # plot the utilization
+resources <- get_mon_resources(envs)
+plot(resources, metric = "utilization")
 
 # plot the usage
+plot(resources, metric = "usage")
 
 # plot the flow time 
+x1 <- get_mon_arrivals(envs)
+x2 <- get_mon_attributes(envs)
+
+all <- merge(x1, x2, by=c("name", "replication"), all = T)
+
+type1 <- subset(all, all$value == 1)
+type2 <- subset(all, all$value == 2)
+
+type1.flowTime <- (type1$end_time - type1$start_time)
+type2.flowTime <- (type2$end_time - type2$start_time)
+
+type1.confF <- quantile(type1.flowTime, c(0.025, 0.975), na.rm = TRUE)
+type2.confF <- quantile(type2.flowTime, c(0.025, 0.975), na.rm = TRUE)
+
+type1.meanF <- mean(type1.flowTime, na.rm = TRUE)
+type2.meanF <- mean(type2.flowTime, na.rm = TRUE)
+
+hist(type1.flowTime, main = "Part 1 Flow Time", xlab = "Time (min.)")
+abline(v = type1.meanF, col = "blue")
+abline(v = type1.confF[1], col = "red")
+abline(v = type1.confF[2], col = "red")
+
+hist(type2.flowTime, main = "Part 2 Flow Time", xlab = "Time (min.)")
+abline(v = type2.meanF, col = "blue")
+abline(v = type2.confF[1], col = "red")
+abline(v = type2.confF[2], col = "red")
 
 # plot the waiting time 
+type1.waitTime <- (type1$end_time - type1$start_time) - type1$activity_time
+type2.waitTime <- (type2$end_time - type2$start_time) - type2$activity_time
 
+type1.confW <- quantile(type1.waitTime, c(0.025, 0.975), na.rm = TRUE)
+type2.confW <- quantile(type2.waitTime, c(0.025, 0.975), na.rm = TRUE)
+
+type1.meanW <- mean(type1.waitTime, na.rm = TRUE)
+type2.meanW <- mean(type2.waitTime, na.rm = TRUE)
+
+hist(type1.waitTime, main = "Part 1 Wait Time", xlab = "Time (min.)")
+abline(v = type1.meanW, col = "blue")
+abline(v = type1.confW[1], col = "red")
+abline(v = type1.confW[2], col = "red")
+
+hist(type2.waitTime, main = "Part 2 Wait Time", xlab = "Time (min.)")
+abline(v = type2.meanW, col = "blue")
+abline(v = type2.confW[1], col = "red")
+abline(v = type2.confW[2], col = "red")
 ```
