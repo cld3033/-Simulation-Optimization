@@ -400,3 +400,11 @@ mean(type1.flowTime, na.rm = T)
 # Average flow time for high priority patients 
 mean(type2.flowTime, na.rm = T)
 ```
+
+## Part B
+
+Given the data from the discrete simulation, the probability that low priority patient balks is approximately 3.16%. 
+```{r}
+# get the probability of a low priority patient balking
+mean(x1$activity_time == 0)
+```
