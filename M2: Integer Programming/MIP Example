@@ -5,28 +5,38 @@ from pulp import *
 
 prob = LpProblem("WYNDOR GLASS CO.", LpMaximize)
 
+# 3 new products
 x1 = LpVariable('x1', lowBound = 0)
 x2 = LpVariable('x2', lowBound = 0)
 x3 = LpVariable('x3', lowBound = 0)
+
+# Binary variables for whether or not the product will be produced 
 y1 = LpVariable('y1', lowBound = 0, upBound = 1, cat = "Integer")
 y2 = LpVariable('y2', lowBound = 0, upBound = 1, cat = "Integer")
 y3 = LpVariable('y3', lowBound = 0, upBound = 1, cat = "Integer")
+# Binary variable for what plant will be used
 y4 = LpVariable('y4', lowBound = 0, upBound = 1, cat = "Integer")
 
+# Total Profit 
 # Objective function
 prob += 5*x1 + 7*x2 + 3*x3, "Z"
 
 bigM = 1000000
 
 # Constraints 
+# production hours constraint for plant 1
 prob += 3*x1 + 4*x2 + 2*x3 <= 30 + bigM*y4
+# production hours constraint for plant 2
 prob += 4*x1 + 6*x2 + 2*x3 <= 40 + bigM*(1-y4)
+# estimated sales potential
 prob += x1 <= 7
 prob += x2 <= 5
 prob += x3 <= 9
+# determines whether or not the product will be produced
 prob += x1 <= bigM*y1
 prob += x2 <= bigM*y2
 prob += x3 <= bigM*y3
+# limit the number of new products to two types
 prob += y1 + y2 + y3 <= 2
 
 print(prob)
